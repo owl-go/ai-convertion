@@ -77,7 +77,7 @@ $ai-project-conventions audit [git-ref]
 $ai-project-conventions check [path]
 ```
 
-只读检查项目的依赖方向、模块划分、职责边界、变更局部性、耦合度、抽象层次、测试/构建和长期演进健康度，并按 0/3/5 评分表给出加权总分、证据和改进建议。报告还会单独列出单文件代码过多的热点：默认代码行数达到 400 行预警、800 行严重，同时检查顶层类/函数数量。该检测不会修改项目。
+只读检查项目的依赖方向、模块划分、职责边界、变更局部性、耦合度、抽象层次、测试/构建和长期演进健康度，并按 0/3/5 评分表给出加权总分、证据和改进建议。报告还会单独列出单文件代码过多的热点和 dead code 候选：默认代码行数达到 400 行预警、800 行严重，同时检查顶层类/函数、未使用导入、未引用内部符号和疑似孤立模块。该检测不会修改项目，候选删除前必须人工确认。
 
 ### 增补单类文档
 
@@ -171,4 +171,4 @@ git -C ~/.agents/skills/ai-project-conventions pull --ff-only
 - [`references/baseline-rules.md`](references/baseline-rules.md)：通用安全、授权和质量基线。
 - [`assets/templates/`](assets/templates/)：按需使用的文档模板。
 - [`scripts/collect_project_evidence.py`](scripts/collect_project_evidence.py)：只读项目证据采集工具。
-- [`scripts/check_project_health.py`](scripts/check_project_health.py)：只读项目结构健康度与单文件规模信号采集工具。
+- [`scripts/check_project_health.py`](scripts/check_project_health.py)：只读项目结构、单文件规模和 dead code 信号采集工具。

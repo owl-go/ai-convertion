@@ -83,6 +83,43 @@ SYMBOL_PATTERNS = {
     "swift": re.compile(r"^\s*(?:(?:public|private|internal|fileprivate|open|static)\s+)*(?:func|class|struct|enum|protocol)\s+\w+"),
 }
 
+DEFINITION_PATTERNS = {
+    "python": re.compile(r"^(?P<indent>\s*)(?P<prefix>async\s+)?(?P<kind>def|class)\s+(?P<name>[A-Za-z_]\w*)"),
+    "javascript": re.compile(
+        r"^(?P<indent>\s*)(?:(?P<export>export)\s+)?(?:(?P<async>async)\s+)?"
+        r"(?:(?P<kind>function|class)\s+(?P<name>[A-Za-z_$][\w$]*)|"
+        r"(?P<decl>const|let|var)\s+(?P<decl_name>[A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>)"
+    ),
+    "typescript": re.compile(
+        r"^(?P<indent>\s*)(?:(?P<export>export)\s+)?(?:(?P<async>async)\s+)?"
+        r"(?:(?P<kind>function|class)\s+(?P<name>[A-Za-z_$][\w$]*)|"
+        r"(?P<decl>const|let|var)\s+(?P<decl_name>[A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>)"
+    ),
+    "go": re.compile(r"^(?P<indent>\s*)func\s+(?:(?:\([^)]*\)\s*)?)(?P<name>[A-Za-z_]\w*)|^(?P<type_indent>\s*)type\s+(?P<type_name>[A-Za-z_]\w*)\s+(?P<type_kind>struct|interface)"),
+    "rust": re.compile(r"^(?P<indent>\s*)(?:(?P<public>pub)\s+)?(?:(?P<async>async)\s+)?(?P<kind>fn|struct|enum|trait)\s+(?P<name>[A-Za-z_]\w*)"),
+    "java": re.compile(r"^(?P<indent>\s*)(?:(?P<public>public|protected|private)\s+)?(?P<kind>class|interface|enum)\s+(?P<name>[A-Za-z_]\w*)"),
+    "kotlin": re.compile(r"^(?P<indent>\s*)(?:(?P<public>public|protected|private|internal)\s+)?(?P<kind>class|object|interface|fun)\s+(?P<name>[A-Za-z_]\w*)"),
+    "csharp": re.compile(r"^(?P<indent>\s*)(?:(?P<public>public|protected|private|internal)\s+)?(?P<kind>class|interface|struct|enum)\s+(?P<name>[A-Za-z_]\w*)"),
+    "ruby": re.compile(r"^(?P<indent>\s*)(?P<kind>def|class|module)\s+(?P<name>[A-Za-z_]\w*[!?=]?)"),
+    "php": re.compile(r"^(?P<indent>\s*)(?:(?P<public>public|protected|private)\s+)?(?P<kind>function|class|interface|trait)\s+(?P<name>[A-Za-z_]\w*)"),
+    "swift": re.compile(r"^(?P<indent>\s*)(?:(?P<public>public|internal|private|fileprivate|open)\s+)?(?P<kind>func|class|struct|enum|protocol)\s+(?P<name>[A-Za-z_]\w*)"),
+}
+
+ENTRYPOINT_NAMES = {
+    "main",
+    "run",
+    "cli",
+    "handler",
+    "handle",
+    "setup",
+    "teardown",
+    "configure",
+    "register",
+    "init",
+    "__init__",
+    "__main__",
+}
+
 def iter_source_files(root: Path) -> Iterable[Path]:
     for current, dirs, files in os.walk(root):
         dirs[:] = sorted(directory for directory in dirs if directory not in IGNORED_DIRS)
@@ -143,6 +180,161 @@ def symbols_for(lines: list[str], language: str) -> int:
     return sum(1 for line in lines if not line[:1].isspace() and pattern.search(line))
 
 
+def definition_from_line(line: str, language: str) -> tuple[str, str, bool] | None:
+    pattern = DEFINITION_PATTERNS.get(language)
+    if pattern is None:
+        return None
+    match = pattern.search(line)
+    if match is None:
+        return None
+    groups = match.groupdict()
+    name = groups.get("name") or groups.get("decl_name") or groups.get("type_name")
+    kind = groups.get("kind") or groups.get("type_kind") or groups.get("decl")
+    if not name or not kind:
+        return None
+    exported = bool(groups.get("export") or groups.get("public"))
+    if language == "go" and name[:1].isupper():
+        exported = True
+    return name, kind, exported
+
+
+def python_import_candidates(path: Path, root: Path, lines: list[str]) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    import_pattern = re.compile(r"^\s*(?:from\s+[^\s]+\s+import\s+(.+)|import\s+(.+))$")
+    for line_number, line in enumerate(lines, start=1):
+        if line.lstrip().startswith("from __future__ import"):
+            continue
+        match = import_pattern.match(line)
+        if match is None:
+            continue
+        imported = match.group(1) or match.group(2) or ""
+        for item in imported.split(","):
+            item = item.strip()
+            if not item or item == "*":
+                continue
+            name = item.split(" as ", 1)[-1].strip().split(".", 1)[0]
+            if not name or name.startswith("_"):
+                continue
+            other_lines = lines[: line_number - 1] + lines[line_number:]
+            other_code = strip_line_comments(other_lines, "python")
+            occurrences = len(re.findall(rf"\b{re.escape(name)}\b", "\n".join(other_code)))
+            if occurrences == 0:
+                candidates.append(
+                    {
+                        "path": relative(path, root),
+                        "scope": source_scope(path, root),
+                        "line": line_number,
+                        "kind": "import",
+                        "name": name,
+                        "confidence": "medium",
+                        "reason": "Python import name has no reference outside its import line",
+                    }
+                )
+    return candidates
+
+
+def dead_code_report(root: Path, paths: list[Path], top: int) -> dict[str, object]:
+    raw_by_path = {path: read_file(path) for path in paths}
+    code_by_path = {
+        path: strip_line_comments(raw_by_path[path], SOURCE_EXTENSIONS[path.suffix.lower()])
+        for path in paths
+    }
+    code_text = {path: "\n".join(lines) for path, lines in code_by_path.items()}
+    definitions: list[dict[str, object]] = []
+    for path in paths:
+        language = SOURCE_EXTENSIONS[path.suffix.lower()]
+        for line_number, line in enumerate(raw_by_path[path], start=1):
+            definition = definition_from_line(line, language)
+            if definition is None:
+                continue
+            name, kind, exported = definition
+            definitions.append(
+                {
+                    "path": path,
+                    "line": line_number,
+                    "language": language,
+                    "name": name,
+                    "kind": kind,
+                    "exported": exported,
+                }
+            )
+
+    names = Counter(str(item["name"]) for item in definitions)
+    symbol_candidates: list[dict[str, object]] = []
+    for item in definitions:
+        name = str(item["name"])
+        path = item["path"]
+        if names[name] > 1 or name in ENTRYPOINT_NAMES or bool(item["exported"]):
+            continue
+        occurrences = sum(
+            len(re.findall(rf"\b{re.escape(name)}\b", text)) for text in code_text.values()
+        )
+        if occurrences != 1:
+            continue
+        symbol_candidates.append(
+            {
+                "path": relative(path, root),
+                "scope": source_scope(path, root),
+                "line": item["line"],
+                "kind": item["kind"],
+                "name": name,
+                "confidence": "medium" if source_scope(path, root) == "test" else "high",
+                "reason": "definition has no code reference outside its declaration",
+            }
+        )
+
+    import_candidates: list[dict[str, object]] = []
+    for path in paths:
+        language = SOURCE_EXTENSIONS[path.suffix.lower()]
+        if language == "python":
+            import_candidates.extend(python_import_candidates(path, root, raw_by_path[path]))
+
+    module_candidates: list[dict[str, object]] = []
+    for path in paths:
+        language = SOURCE_EXTENSIONS[path.suffix.lower()]
+        stem = path.stem
+        if language in {"sql", "shell"} or stem.lower() in ENTRYPOINT_NAMES or source_scope(path, root) == "test":
+            continue
+        if any(part.lower() in {"scripts", "bin", "cmd", "cli", "app", "main"} for part in path.relative_to(root).parts[:-1]):
+            continue
+        module_pattern = re.compile(rf"\b{re.escape(stem)}\b")
+        inbound_references = sum(
+            len(module_pattern.findall(text))
+            for other_path, text in code_text.items()
+            if other_path != path
+        )
+        if inbound_references == 0:
+            module_candidates.append(
+                {
+                    "path": relative(path, root),
+                    "scope": source_scope(path, root),
+                    "kind": "module",
+                    "name": stem,
+                    "confidence": "low",
+                    "reason": "no inbound textual module reference found; dynamic imports may be missed",
+                }
+            )
+
+    all_candidates = symbol_candidates + import_candidates + module_candidates
+    confidence_rank = {"high": 0, "medium": 1, "low": 2}
+    all_candidates.sort(key=lambda item: (confidence_rank[str(item["confidence"])], str(item["path"]), int(item.get("line", 0))))
+    return {
+        "heuristic": True,
+        "summary": {
+            "candidate_count": len(all_candidates),
+            "symbol_candidates": len(symbol_candidates),
+            "unused_import_candidates": len(import_candidates),
+            "orphan_module_candidates": len(module_candidates),
+        },
+        "candidates": all_candidates[:top],
+        "omitted_candidates": max(0, len(all_candidates) - top),
+        "disclaimer": (
+            "Dead-code candidates are heuristic. Reflection, dynamic imports, dependency injection, "
+            "plugin registration, generated code, CLI entrypoints, and external consumers require manual confirmation."
+        ),
+    }
+
+
 def file_signal(path: Path, root: Path, warn_lines: int, critical_lines: int, warn_symbols: int, critical_symbols: int) -> dict[str, object]:
     language = SOURCE_EXTENSIONS[path.suffix.lower()]
     raw_lines = read_file(path)
@@ -175,6 +367,7 @@ def file_signal(path: Path, root: Path, warn_lines: int, critical_lines: int, wa
 
 
 def collect(root: Path, args: argparse.Namespace) -> dict[str, object]:
+    paths = list(iter_source_files(root))
     signals = [
         file_signal(
             path,
@@ -184,7 +377,7 @@ def collect(root: Path, args: argparse.Namespace) -> dict[str, object]:
             args.warn_symbols,
             args.critical_symbols,
         )
-        for path in iter_source_files(root)
+        for path in paths
     ]
     severity_rank = {"critical": 0, "warning": 1, "normal": 2}
     signals.sort(key=lambda item: (severity_rank[str(item["severity"])], -int(item["code_lines"])))
@@ -214,6 +407,7 @@ def collect(root: Path, args: argparse.Namespace) -> dict[str, object]:
         },
         "file_signals": signals[: args.top],
         "omitted_hotspots": max(0, len(signals) - args.top),
+        "dead_code": dead_code_report(root, paths, args.deadcode_top),
         "disclaimer": (
             "Line and symbol counts are heuristic signals. They do not prove module boundaries, "
             "complexity, generated-code ownership, or architecture quality."
@@ -256,6 +450,37 @@ def render_markdown(report: dict[str, object]) -> str:
         )
     if report["omitted_hotspots"]:
         lines.extend(["", f"- Omitted hotspots: `{report['omitted_hotspots']}`; rerun with a larger `--top` to inspect them."])
+    dead_code = report["dead_code"]
+    assert isinstance(dead_code, dict)
+    dead_summary = dead_code["summary"]
+    assert isinstance(dead_summary, dict)
+    lines.extend(
+        [
+            "",
+            "## Dead-code candidates",
+            "",
+            (
+                f"- Candidates: {dead_summary['candidate_count']}; symbols: {dead_summary['symbol_candidates']}; "
+                f"unused Python imports: {dead_summary['unused_import_candidates']}; orphan modules: {dead_summary['orphan_module_candidates']}"
+            ),
+            "",
+            "| Confidence | Kind | Scope | File | Line | Name | Reason |",
+            "|---|---|---|---|---:|---|---|",
+        ]
+    )
+    candidates = dead_code["candidates"]
+    assert isinstance(candidates, list)
+    for item in candidates:
+        assert isinstance(item, dict)
+        lines.append(
+            f"| {item['confidence']} | {item['kind']} | {item['scope']} | {item['path']} | {item.get('line', '-')} | {item['name']} | {item['reason']} |"
+        )
+    if dead_code["omitted_candidates"]:
+        lines.append(
+            f"- Omitted dead-code candidates: {dead_code['omitted_candidates']}; "
+            "rerun with a larger --deadcode-top to inspect them."
+        )
+    lines.extend([f"- {dead_code['disclaimer']}", ""])
     lines.extend(["", "## Limits", "", f"- {report['disclaimer']}"])
     return "\n".join(lines) + "\n"
 
@@ -265,6 +490,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("repository", type=Path, help="Project repository to inspect")
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     parser.add_argument("--top", type=int, default=10, help="Number of file hotspots to print")
+    parser.add_argument("--deadcode-top", type=int, default=20, help="Number of dead-code candidates to print")
     parser.add_argument("--warn-lines", type=int, default=400)
     parser.add_argument("--critical-lines", type=int, default=800)
     parser.add_argument("--warn-symbols", type=int, default=20)
@@ -280,6 +506,7 @@ def main() -> int:
         return 2
     if (
         args.top < 1
+        or args.deadcode_top < 1
         or args.warn_lines < 1
         or args.critical_lines < args.warn_lines
         or args.warn_symbols < 1
