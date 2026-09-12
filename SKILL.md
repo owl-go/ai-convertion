@@ -1,6 +1,6 @@
 ---
 name: ai-project-conventions
-description: 用简短命令为软件项目初始化、审计、回补或增补 AI 协作规范文档，同步维护 AGENTS.md 与 CLAUDE.md，并管理架构、工程标准、质量门禁、需求/设计/ADR 和运维规则。
+description: 用简短命令为软件项目初始化、检测评分、审计、回补或增补 AI 协作规范文档，同步维护 AGENTS.md 与 CLAUDE.md，并检查架构、工程标准、代码质量、需求/设计/ADR 和运维规则。
 ---
 
 # AI 项目规范
@@ -21,7 +21,7 @@ $ai-project-conventions help
 - `init`：扫描项目，创建最小且可维护的规范体系。
 - `sync`：根据当前事实和 Git 变化更新已有规范；省略 `git-ref` 时检查当前工作区变化，并说明覆盖边界。
 - `audit`：只读检查文档漂移、冲突、缺口和失效规则，不修改文件。
-- `check`：只读检查项目结构健康度，按依赖方向、模块边界、职责、变更局部性、耦合、抽象、测试/构建和演进健康度评分，并报告单文件代码过多的热点与改进建议。
+- `check`：只读检查项目结构与代码质量，覆盖依赖和模块边界、单文件规模、dead code、风格、缺陷、安全、复杂度、重复、测试覆盖和代码坏味道，并给出评分与改进建议。
 - `add`：补充一种文档。`kind` 支持 `agents`、`map`、`glossary`、`architecture`、`standard`、`gates`、`requirement`、`design`、`adr`、`runbook`、`exception`、`impact-map`；`agents` 同时生成或更新 `AGENTS.md` 与 `CLAUDE.md`。
 - `help`：只返回命令和 `kind` 列表。
 
@@ -43,11 +43,13 @@ $ai-project-conventions help
 
 ### `check`
 
-读取 [references/project-health-check.md](references/project-health-check.md)，运行 `scripts/check_project_health.py <repo>` 获取文件规模、语言分布、符号数量、dead code 候选和热点证据，再阅读模块入口、依赖、测试、构建配置和近期变化。输出一页式评分表（0 分/3 分/5 分）、加权总分、单文件规模专项、dead code 专项、证据、未验证项和按优先级排序的改进建议。评分是基于证据的工程判断，不把启发式脚本结果冒充架构事实；没有足够证据的维度标为“待确认”，不得擅自给满分。
+读取 [references/project-health-check.md](references/project-health-check.md)，运行 `scripts/check_project_health.py <repo>`；该脚本同时汇总 `scripts/check_code_quality.py` 的结果。结合文件规模、依赖、测试、构建配置和近期变化，输出一页式结构评分表（0 分/3 分/5 分）、加权总分，以及单文件、dead code、代码风格、缺陷/潜在 Bug、安全漏洞、复杂度与可维护性、重复代码、测试覆盖和代码坏味道专项。评分是基于证据的工程判断，不把启发式候选冒充已确认事实；没有足够证据的项目标为“待确认”。
 
 单文件检测至少报告：生产代码与测试代码分别的代码行数、文件总行数、类/函数或同等顶层符号数量、超过阈值的文件、文件所在模块及拆分建议。默认阈值和语言例外以参考文档为准；生成物、依赖目录和供应商代码不纳入统计，除非用户明确要求。
 
 dead code 检测至少报告：未被代码引用的内部函数/类/类型、可疑未使用导入、没有入站文本引用的模块候选及置信度。候选必须人工确认后才能删除；反射、动态导入、依赖注入、插件注册、生成代码、CLI 入口和外部调用方均可能造成误报。
+
+代码质量检测先发现项目已配置的格式化、静态分析、安全、重复度和覆盖率工具；确认命令真实且只读后运行。通用脚本用于补充候选，不替代语言生态工具。每项结果必须包含类别、严重度、文件/行号、规则、证据、置信状态和建议动作；没有覆盖率产物时只能报告“未验证”，不能推断覆盖率数值。
 
 ### `add`
 

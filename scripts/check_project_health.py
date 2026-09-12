@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -335,6 +336,26 @@ def dead_code_report(root: Path, paths: list[Path], top: int) -> dict[str, objec
     }
 
 
+def code_quality_report(root: Path, top: int) -> dict[str, object]:
+    checker = Path(__file__).with_name("check_code_quality.py")
+    if not checker.is_file():
+        return {"available": False, "error": f"quality checker not found: {checker}"}
+    result = subprocess.run(
+        [sys.executable, str(checker), str(root), "--format", "json", "--top", str(top)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return {"available": False, "error": result.stderr.strip() or "quality checker failed"}
+    try:
+        report = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        return {"available": False, "error": f"invalid quality checker output: {error}"}
+    report["available"] = True
+    return report
+
+
 def file_signal(path: Path, root: Path, warn_lines: int, critical_lines: int, warn_symbols: int, critical_symbols: int) -> dict[str, object]:
     language = SOURCE_EXTENSIONS[path.suffix.lower()]
     raw_lines = read_file(path)
@@ -408,6 +429,7 @@ def collect(root: Path, args: argparse.Namespace) -> dict[str, object]:
         "file_signals": signals[: args.top],
         "omitted_hotspots": max(0, len(signals) - args.top),
         "dead_code": dead_code_report(root, paths, args.deadcode_top),
+        "code_quality": code_quality_report(root, args.quality_top),
         "disclaimer": (
             "Line and symbol counts are heuristic signals. They do not prove module boundaries, "
             "complexity, generated-code ownership, or architecture quality."
@@ -481,6 +503,30 @@ def render_markdown(report: dict[str, object]) -> str:
             "rerun with a larger --deadcode-top to inspect them."
         )
     lines.extend([f"- {dead_code['disclaimer']}", ""])
+    quality = report["code_quality"]
+    assert isinstance(quality, dict)
+    lines.extend(["", "## Code quality", ""])
+    if not quality.get("available"):
+        lines.append(f"- unavailable: {quality.get('error', 'unknown error')}")
+    else:
+        quality_summary = quality["summary"]
+        quality_coverage = quality["coverage"]
+        assert isinstance(quality_summary, dict) and isinstance(quality_coverage, dict)
+        lines.append(f"- Findings: {quality_summary['findings']}; source files: {quality_summary['source_files']}")
+        lines.append(f"- Coverage evidence: {'detected' if quality_coverage['coverage_evidence'] else 'not detected'}; production files: {quality_coverage['production_files']}; test files: {quality_coverage['test_files']}")
+        lines.extend(["", "| Category | Status | Findings |", "|---|---|---:|"])
+        categories = quality_summary["by_category"]
+        assert isinstance(categories, dict)
+        for category, item in categories.items():
+            lines.append(f"| {category} | {item['status']} | {item['findings']} |")
+        quality_findings = quality["findings"]
+        assert isinstance(quality_findings, list)
+        lines.extend(["", "| Severity | Category | File | Line | Rule | Evidence |", "|---|---|---|---:|---|---|"])
+        for finding in quality_findings:
+            lines.append(f"| {finding['severity']} | {finding['category']} | {finding['file']} | {finding['line']} | {finding['rule']} | {finding['evidence']} |")
+        if quality["omitted_findings"]:
+            lines.append(f"- Omitted quality findings: {quality['omitted_findings']}; rerun with a larger --quality-top to inspect them.")
+        lines.append(f"- {quality['disclaimer']}")
     lines.extend(["", "## Limits", "", f"- {report['disclaimer']}"])
     return "\n".join(lines) + "\n"
 
@@ -491,6 +537,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     parser.add_argument("--top", type=int, default=10, help="Number of file hotspots to print")
     parser.add_argument("--deadcode-top", type=int, default=20, help="Number of dead-code candidates to print")
+    parser.add_argument("--quality-top", type=int, default=100, help="Number of code-quality findings to print")
     parser.add_argument("--warn-lines", type=int, default=400)
     parser.add_argument("--critical-lines", type=int, default=800)
     parser.add_argument("--warn-symbols", type=int, default=20)
@@ -507,6 +554,7 @@ def main() -> int:
     if (
         args.top < 1
         or args.deadcode_top < 1
+        or args.quality_top < 1
         or args.warn_lines < 1
         or args.critical_lines < args.warn_lines
         or args.warn_symbols < 1
