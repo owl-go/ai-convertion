@@ -13,6 +13,7 @@ description: 用简短命令为软件项目初始化、审计、回补或增补 
 $ai-project-conventions init [path]
 $ai-project-conventions sync [git-ref]
 $ai-project-conventions audit [git-ref]
+$ai-project-conventions check [path]
 $ai-project-conventions add <kind> [scope]
 $ai-project-conventions help
 ```
@@ -20,6 +21,7 @@ $ai-project-conventions help
 - `init`：扫描项目，创建最小且可维护的规范体系。
 - `sync`：根据当前事实和 Git 变化更新已有规范；省略 `git-ref` 时检查当前工作区变化，并说明覆盖边界。
 - `audit`：只读检查文档漂移、冲突、缺口和失效规则，不修改文件。
+- `check`：只读检查项目结构健康度，按依赖方向、模块边界、职责、变更局部性、耦合、抽象、测试/构建和演进健康度评分，并报告单文件代码过多的热点与改进建议。
 - `add`：补充一种文档。`kind` 支持 `agents`、`map`、`glossary`、`architecture`、`standard`、`gates`、`requirement`、`design`、`adr`、`runbook`、`exception`、`impact-map`；`agents` 同时生成或更新 `AGENTS.md` 与 `CLAUDE.md`。
 - `help`：只返回命令和 `kind` 列表。
 
@@ -39,6 +41,12 @@ $ai-project-conventions help
 
 按 `sync` 的证据范围检查，但保持只读。输出：比较基线、漂移/冲突、缺失文档、失效命令或链接、重复规则、待确认事项及建议动作。
 
+### `check`
+
+读取 [references/project-health-check.md](references/project-health-check.md)，运行 `scripts/check_project_health.py <repo>` 获取文件规模、语言分布、符号数量和热点证据，再阅读模块入口、依赖、测试、构建配置和近期变化。输出一页式评分表（0 分/3 分/5 分）、加权总分、单文件规模专项、证据、未验证项和按优先级排序的改进建议。评分是基于证据的工程判断，不把启发式脚本结果冒充架构事实；没有足够证据的维度标为“待确认”，不得擅自给满分。
+
+单文件检测至少报告：生产代码与测试代码分别的代码行数、文件总行数、类/函数或同等顶层符号数量、超过阈值的文件、文件所在模块及拆分建议。默认阈值和语言例外以参考文档为准；生成物、依赖目录和供应商代码不纳入统计，除非用户明确要求。
+
 ### `add`
 
 读取 [references/document-system.md](references/document-system.md) 的模板路由，只使用对应模板。沿用项目现有目录和语言；`scope` 省略时根据当前任务和仓库结构推断。
@@ -51,6 +59,7 @@ $ai-project-conventions help
 - 不猜测版本、命令、负责人、业务边界或生产流程。非阻塞缺口写为“待确认”。
 - 保留现有人工内容和工作区改动；只修改命令对应范围。
 - 仅当无法推断的选择会改变业务行为、权限、安全、生产操作或已批准决策时，提出一个必要问题；其他情况直接完成。
+- 结构评分必须引用可定位证据；先呈现事实，再给出判断和改进建议。单文件过大既是文件级问题，也是职责边界和模块划分的证据。
 - 只报告实际执行的检查，并列出未验证项及原因。
 
 ## 完成标准
@@ -59,3 +68,4 @@ $ai-project-conventions help
 - 项目特定陈述都有证据、用户确认或“待确认”标记。
 - `AGENTS.md` 与 `CLAUDE.md` 均能路由到适用规范，且通过 `cmp -s AGENTS.md CLAUDE.md` 验证内容完全一致。
 - `sync`/`audit` 的每项候选影响都有结论，且报告真实覆盖范围。
+- `check` 的每个评分维度都有证据或“待确认”说明，权重合计 100%，并列出至少一个最高优先级改进动作（若无问题则说明已验证的依据）。
