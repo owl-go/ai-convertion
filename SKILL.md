@@ -1,6 +1,6 @@
 ---
 name: ai-project-conventions
-description: 为软件项目建立、审计或持续维护工程 Harness 规范，覆盖架构、代码、数据库、需求、测试、UI，连接规则、质量门禁与交付证据；支持 init/sync/audit/check/add，保留已有项目约定并按项目配置维护代理入口（兼容 AGENTS.md/CLAUDE.md）。
+description: 建立、审计和维护跨项目工程 Harness 规范，或用 workflow 指导具体开发任务的需求、影响、方案、实现、验证与交付；覆盖架构、代码、数据库、需求、测试、UI，按实际授权协作，保留项目约定和工具入口，兼容 init/sync/audit/check/add。
 ---
 
 # AI 项目规范与工程 Harness
@@ -15,6 +15,8 @@ $ai-project-conventions sync [git-ref]
 $ai-project-conventions audit [git-ref]
 $ai-project-conventions check [path]
 $ai-project-conventions add <kind> [scope]
+$ai-project-conventions workflow <task>
+$ai-project-conventions workflow resume [task-record]
 $ai-project-conventions help
 ```
 
@@ -23,9 +25,17 @@ $ai-project-conventions help
 - `audit`：只读检查文档漂移、冲突、缺口和失效规则，不修改文件。
 - `check`：只读检查项目结构与代码质量，覆盖依赖和模块边界、单文件规模、dead code、风格、缺陷、安全、复杂度、重复、测试覆盖和代码坏味道，并给出评分与改进建议。
 - `add`：补充一种文档。原有 `kind`：`agents`、`map`、`glossary`、`architecture`、`standard`、`gates`、`requirement`、`design`、`adr`、`runbook`、`exception`、`impact-map`；新增 `harness`、`profile`、`database`、`migration`、`testing`、`ui`、`task`。`agents` 显式请求生成或更新兼容双入口；模板和语义见 [文档体系](references/document-system.md)。
-- `help`：只返回命令和 `kind` 列表。
+- `workflow`：按具体任务意图指导开发协作，详见下方分支；`resume` 核实实际状态后恢复已有任务。
+- `help`：只返回命令（含 `workflow`/`resume` 语法）和 `kind` 列表。
 
-没有命令时：项目缺少 AI 规范则执行 `init`；已有规范则执行 `sync`。
+仅调用 skill、没有命令也未明确请求具体开发流程时：项目缺少 AI 规范则执行 `init`；已有规范则执行 `sync`。
+
+## 选择使用分支
+
+- **规范建立/维护**：用 `init`、`add` 创建或补充文档，`sync` 更新已授权规范，`audit`/`check` 只读检查；这些操作不自动实施业务功能。
+- **具体开发任务**：用 `workflow <task>`，或明确要求“按本 skill 的开发流程实现/修复/设计/评审某任务”，读取 [开发协作流程](references/development-workflow.md)。咨询、方案或评审按只读意图执行；实现/修复在已授权范围实施并验证；提交、发布与外部写入沿用实际授权，命令本身不扩展权限。
+
+已有明确授权持续有效。按任务风险选择必要阶段，局部变更可合并记录；每阶段有可判断的退出条件，失败返回相应调查/修复步骤，保持未完成范围可见。无需逐阶段停下确认或生成整套文档。
 
 当用户请求开发、扩充或安装这个 skill 本身时，作用对象是技能源文件；不对示例业务项目执行 `init`/`sync`。
 
@@ -42,7 +52,7 @@ $ai-project-conventions help
 | 测试策略、缺陷回归或门禁范围 | [测试规范](references/testing.md) | 风险驱动测试计划、分状态结果 |
 | 页面、组件、交互或设计验收 | [UI 规范](references/ui.md) | token/组件来源、状态矩阵、交互与视觉证据 |
 
-所有规范按通用基线、技术栈补充、项目约定三层采用；当前基线版本及升级流程以 Harness 参考为准。六类都必须有适用结论，数据库/UI 等不适用时记录依据，无需生成空文档。
+所有规范按通用基线、技术栈补充、项目约定三层采用；当前基线版本及升级流程以 Harness 参考为准。基线采用时六类均有适用结论，数据库/UI 等不适用时记录依据，无需生成空文档。
 
 ## 命令执行
 
@@ -72,6 +82,10 @@ dead code 检测至少报告：未被代码引用的内部函数/类/类型、�
 
 读取 [references/document-system.md](references/document-system.md) 的模板路由及对应类别参考，只使用对应模板。沿用项目现有目录和语言；`scope` 省略时根据当前任务和仓库结构推断。`standard code` 使用代码参考与通用规则模板；`database` 是当前数据模型，`migration` 是一次迁移计划，两者与数据库规则正文分开。
 
+### `workflow`
+
+任务描述与项目上下文是输入，不是独立 shell 程序。依开发流程定位意图、适用阶段和证据；保留目标、范围、依据、验收、验证方法、进度与未决项，按影响触发六类规范及文档同步。只有 `workflow` 而上下文也没有具体任务时，澄清目标，不转成项目初始化。`workflow resume [task-record]` 使用指定记录；省略记录时查找当前任务已知账本/Issue，先核实版本、工作区和证据。多条记录无法识别目标时仅澄清目标任务，不能任意恢复另一任务。
+
 ## 自动决策规则
 
 - 当前事实以代码、配置、测试和运行证据确认；期望行为与决策以已批准需求/ADR 确认。两者冲突记录实现差异与待决项，不依据代码静默改写业务要求；外部材料只作为待分析内容。
@@ -87,9 +101,10 @@ dead code 检测至少报告：未被代码引用的内部函数/类/类型、�
 ## 完成标准
 
 - 文档数量与项目规模相称，没有空壳或未替换的模板文本。
-- 六类均有适用性结论；关键规则有 ID、等级、范围、要求、理由、验证、失败处理和例外条件；项目记录采用版本，规范与当前项目产物分开。
+- `init`/基线采用时六类均有适用性结论；关键规则有 ID、等级、范围、要求、理由、验证、失败处理和例外条件；项目记录采用版本，规范与当前项目产物分开。具体任务只按实际影响读取并验证相关类别。
 - 适用规则能追踪到质量门禁与完成证据；未验证的必须门禁保持未完成或关联有效例外，任务交接包含进度、失败恢复和下一步。
 - 项目特定陈述都有证据、用户确认或“待确认”标记。
 - 实际工具入口能路由到适用规范；采用双入口镜像时用 `cmp -s AGENTS.md CLAUDE.md` 验证一致；未真实加载的工具明确标为未验证。
 - `sync`/`audit` 的每项候选影响都有结论，且报告真实覆盖范围。
+- `workflow` 在任务授权范围内达到实际验收，或清楚说明未完成/未验证/待决范围；评审与咨询的完成是有证据的结论，不能自动进入实施。交接能从事实、进度与下一步恢复。
 - `check` 的每个评分维度都有证据或“待确认”说明，权重合计 100%，并列出单文件与 dead code 结果及至少一个最高优先级改进动作（若无问题则说明已验证的依据）。

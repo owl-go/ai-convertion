@@ -1,6 +1,6 @@
 # AI Project Conventions
 
-可跨工具复用的工程 Harness skill，覆盖架构、代码、数据库、需求、测试、UI，连接规则、门禁、交付证据与长期维护。核心基线采用“通用基线＋技术栈补充＋项目约定”三层，当前版本见 [Harness 采用说明](references/harness.md)。
+可跨工具复用的工程 Harness skill，覆盖架构、代码、数据库、需求、测试、UI，连接规则、门禁、交付证据与长期维护，并通过 `workflow` 指导具体开发协作任务。核心基线采用“通用基线＋技术栈补充＋项目约定”三层，当前版本见 [Harness 采用说明](references/harness.md)。
 
 从代码、配置、测试、批准决策和 Git 变化中收集证据，按适用性创建最小文档集。实际工具入口优先；兼容双入口镜像只在已有约定或显式 `add agents` 时采用。
 
@@ -25,6 +25,20 @@ $ai-project-conventions init
 ```
 
 skill 会自动识别项目根目录、语言、技术栈、已有文档和真实工程命令，不要求预先填写长篇项目说明。
+
+规范建立/维护使用 `init`、`add`、`sync`、`audit`、`check`；这些命令不自动实施业务功能。具体开发任务使用下面的流程入口，按任务意图和实际授权协作。
+
+### 指导具体任务与恢复
+
+```text
+$ai-project-conventions workflow 实现订单取消原因，先核实批准需求、兼容与验收，再按影响实现和验证。
+$ai-project-conventions workflow 只读评审取消原因方案的边界、迁移与验收缺口。
+$ai-project-conventions workflow resume docs/tasks/order-cancellation.md
+```
+
+这是向支持此语法的代理发送的指令，路径是任务记录示例，其他工具按真实配置接入。也可明确要求“按本 skill 开发流程设计/实现/评审某任务”。咨询/设计/评审按只读意图执行，实施任务在已有授权范围修改并验证；提交、发布、生产与外部写入仍需实际任务授权。
+
+[开发协作流程](references/development-workflow.md) 覆盖需求、现状影响、方案与小步、实现、验证、评审交付、按授权发布观察、反馈维护。按风险裁剪阶段，不逐步暂停、不要求全套文档或全量测试。每项任务保留目标、范围、依据、验收、验证方法、进度和未决项；长任务记录版本、工作区、决策、剩余项与下一步，恢复先核实当前状态并复用有效证据。
 
 ## 命令
 
@@ -111,7 +125,7 @@ $ai-project-conventions add gates
 $ai-project-conventions help
 ```
 
-直接调用 `$ai-project-conventions` 而不带命令时：缺少 AI 规范的项目执行 `init`，已有规范的项目执行 `sync`。
+仅调用 `$ai-project-conventions`、不带命令也未明确请求具体开发流程时：缺少 AI 规范的项目执行 `init`，已有规范的项目执行 `sync`。
 
 ## 生成结构
 
@@ -156,6 +170,7 @@ docs/
 - [`SKILL.md`](SKILL.md)：命令入口与执行约束。
 - [`references/document-system.md`](references/document-system.md)：文档选型和模板路由。
 - [`references/maintenance-workflow.md`](references/maintenance-workflow.md)：持续审计与回补流程。
+- [`references/development-workflow.md`](references/development-workflow.md)：具体开发任务、各阶段退出条件、反馈与中断恢复。
 - [`references/baseline-rules.md`](references/baseline-rules.md)：通用安全、授权和质量基线。
 - [`assets/templates/`](assets/templates/)：按需使用的文档模板。
 - [`scripts/collect_project_evidence.py`](scripts/collect_project_evidence.py)：只读项目证据采集工具。

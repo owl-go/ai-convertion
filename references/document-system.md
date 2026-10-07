@@ -22,7 +22,7 @@
 | 技术栈补充 | 通用规则需要绑定具体实现/工具 | 规则到配置/命令的映射、验证结果和盲区 | 重复配置中的默认值 |
 | 数据模型/迁移计划 | 持久化语义或数据变更 | 当前模型语义/一次迁移与恢复 | 通用数据库规则正文 |
 | 测试策略/UI 规格 | 验证策略或页面/交互需要跨阶段维护 | 风险与验证选择/状态与设计验收 | 通用测试/UI 规则正文 |
-| 任务账本 | 长期/跨阶段任务或复杂失败恢复 | 进度、AC/规则/门禁证据、失败与交接 | 永久规范正文 |
+| 任务账本 | 具体开发协作任务；长期/跨阶段任务保存账本 | 最小任务记录、适用阶段/退出条件、进度、AC/规则/门禁证据与恢复 | 每个小任务强制独立文档、永久规范正文 |
 
 ## 默认结构
 
@@ -69,7 +69,7 @@ docs/
 | 一次迁移 / `migration` | [migration-plan.md](../assets/templates/migration-plan.md) |
 | 测试策略 / `testing` | [test-strategy.md](../assets/templates/test-strategy.md) |
 | UI 规格与验收 / `ui` | [ui-spec.md](../assets/templates/ui-spec.md) |
-| 任务与交接 / `task` | [task-evidence.md](../assets/templates/task-evidence.md) |
+| 任务与交接 / `task` | [task-evidence.md](../assets/templates/task-evidence.md)；具体任务与恢复读 [开发协作流程](development-workflow.md) |
 
 模板是待裁剪的输出骨架，不是项目事实。空白字段、示例行和不适用章节不能进入最终活动文档。
 
