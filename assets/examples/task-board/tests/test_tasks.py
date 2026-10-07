@@ -16,10 +16,10 @@ class TaskTests(unittest.TestCase):
         self.service = TaskService(self.repository)
         self.app = Application(self.service)
 
-    def request(self, method, path, body=None):
+    def request(self, method, path, body=None, query=""):
         raw = json.dumps(body).encode() if body is not None else b""
         status = []
-        environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_LENGTH": str(len(raw)), "wsgi.input": io.BytesIO(raw)}
+        environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_LENGTH": str(len(raw)), "QUERY_STRING": query, "wsgi.input": io.BytesIO(raw)}
         response = self.app(environ, lambda value, headers: status.append(value))
         return status[0], json.loads(b"".join(response))
 
@@ -40,6 +40,19 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(first[0], "200 OK")
         self.assertEqual(first[1]["done"], 1)
         self.assertEqual(self.request("POST", f"/api/tasks/{task['id']}/complete"), first)
+
+    def test_active_default_and_opt_in_complete(self):
+        done = self.service.create("已做")
+        active = self.service.create("待做")
+        self.service.complete(done["id"])
+        self.assertEqual(self.request("GET", "/api/tasks")[1], [active])
+        all_tasks = self.request("GET", "/api/tasks", query="include_done=1")[1]
+        self.assertEqual([task["id"] for task in all_tasks], [done["id"], active["id"]])
+        self.assertEqual(all_tasks[0]["done"], 1)
+
+    def test_invalid_filter(self):
+        for query in ["include_done=yes", "include_done=", "include_done=1&include_done=0"]:
+            self.assertEqual(self.request("GET", "/api/tasks", query=query)[0], "400 Bad Request")
 
     def test_unknown_task_and_bad_id(self):
         self.assertEqual(self.request("POST", "/api/tasks/999/complete")[0], "404 Not Found")

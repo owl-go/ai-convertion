@@ -20,8 +20,11 @@ class SQLiteRepository:
         row = self.connection.execute("SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)).fetchone()
         return dict(row) if row else None
 
-    def list_tasks(self):
-        return [dict(row) for row in self.connection.execute("SELECT id, title, done FROM tasks ORDER BY id")]
+    def list_tasks(self, include_done=False):
+        return [dict(row) for row in self.connection.execute(
+            "SELECT id, title, done FROM tasks WHERE (? = 1 OR done = 0) ORDER BY id",
+            (int(include_done),),
+        )]
 
     def complete(self, task_id):
         with self.connection:

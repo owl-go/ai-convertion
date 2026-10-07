@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.parse import parse_qs
 
 
 class Application:
@@ -11,7 +12,11 @@ class Application:
         status, content_type = "200 OK", "application/json; charset=utf-8"
         try:
             if method == "GET" and path == "/api/tasks":
-                result = self.service.list_tasks()
+                query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
+                values = query.get("include_done", ["0"])
+                if len(values) != 1 or values[0] not in {"0", "1"}:
+                    raise ValueError("include_done 需为 0 或 1")
+                result = self.service.list_tasks(include_done=values[0] == "1")
             elif method == "POST" and path == "/api/tasks":
                 length = int(environ.get("CONTENT_LENGTH") or 0)
                 if not 0 < length <= 4096:

@@ -4,6 +4,21 @@
 
 适用整个任务板，依据 app 的实际导入、web 的模块引用、CI 与 build.py。当前布局即下面的布局，不含计划中的服务拆分。
 
+## 真实目录树
+
+```text
+app/{server,http,service,storage}.py
+web/{index.html,page.mjs,api.mjs,tokens.css}
+migrations/001_tasks.sql
+tests/test_tasks.py
+scripts/build.py
+.github/workflows/ci.yml
+pyproject.toml / .gitignore
+AGENTS.md
+docs/{conventions,requirements,designs}/
+dist/ / tasks.sqlite3 / __pycache__/  # 生成、忽略
+```
+
 ## 具体归属与依赖
 
 | 路径 | 放什么 | 禁止混放 |
@@ -29,3 +44,10 @@ server → http/service/storage；http → service 实例；service → reposito
 ## 检查
 
 阅读改动文件导入和调用方，对照上述方向；运行根目录 unittest 与 build.py 检查实际可用性。没有自动依赖门禁，文本 import 扫描只能定位，不能证明动态调用没有越界。
+
+### 本文件检查如何判定
+
+静态/文本：使用根入口真实检查命令定位语法或引用线索，不能证明规则语义。
+语义审查：对照本文件规则阅读受影响实现、调用方和有效 AC，列已读边界。
+行为测试：根目录 unittest 覆盖协议/数据库/输入场景；新增验收映射到具体需求与测试，不推断所有异常已覆盖。
+人工 UI：页面相关规则按 UI 规范记录视口/键盘/状态操作；纯目录、写法或 SQL 规则不适用视觉检查。实际执行状态单列。

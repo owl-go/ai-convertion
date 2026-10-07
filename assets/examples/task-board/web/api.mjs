@@ -4,7 +4,7 @@ async function request(path, options = {}) {
   if (!response.ok) throw new Error(body.error || "请求失败");
   return body;
 }
-export const listTasks = () => request("/api/tasks");
+export const listTasks = (includeDone = false) => request(`/api/tasks?include_done=${includeDone ? "1" : "0"}`);
 export const createTask = (title) => request("/api/tasks", {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title })
 });

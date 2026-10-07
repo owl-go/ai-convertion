@@ -29,21 +29,21 @@ $ai-project-conventions check
 AGENTS.md                     # 或 CLAUDE.md，实际工具入口
 docs/
   conventions/
-    directory-structure.md    # 文件归属、依赖方向、正反例与检查
-    language.md               # 语言、错误、资源、并发、依赖与检查
-    frontend.md               # 组件/路由/状态/请求/构建边界
-    ui.md                     # 组件/token、交互状态、视觉验收
-    database.md               # 模型、约束、查询、事务、迁移规则
-    requirements.md           # 需求与 AC 怎样写
-    technical-design.md       # 实现方案怎样写
-    testing.md                # 测试位置、选择、隔离与真实命令
+    directory-structure.md            # 文件归属、依赖方向、正反例与检查
+    <语言>-standards.md                 # 语言、错误、资源、并发、依赖与检查
+    frontend-standards.md             # 组件/路由/状态/请求/构建边界
+    ui-standards.md                   # 组件/token、交互状态、视觉验收
+    database-standards.md             # 模型、约束、查询、事务、迁移规则
+    requirement-standards.md          # 需求与 AC 怎样写
+    technical-design-standards.md     # 实现方案怎样写
+    testing-standards.md              # 测试位置、选择、隔离与真实命令
   requirements/               # 有具体需求时新增文件
   designs/                    # 有具体方案时新增文件
 ```
 
-多语言按目录拆语言文件；无前端/数据库不生成相应规则。已有权威文档优先复用路径。入口是项目事实与架构/目录约定的权威位置；具体规范不是入口的重复全文，需求与方案产物不是规范的副本。不默认生成地图、门禁、采用记录、影响图、任务账本或 eval 文件。
+多语言按目录拆语言文件；无前端/数据库不生成相应规则。已有权威文档优先复用路径。入口维护项目事实、架构铁律和目录概要；目录规范权威维护详细文件归属与依赖方向，其他规范各自维护适用规则，需求与方案产物不是规范的副本。不默认生成地图、门禁、采用记录、影响图、任务账本或 eval 文件。
 
-所有项目新增代码和文件遵循入口树与归属表：业务模块、启动、适配、前端、测试、配置、脚本、文档、生成物都要有位置；新增模块时同步树。实际目录与批准目标不同分别记录，不能把未迁移的目录说成现状。
+所有新增代码和文件遵循目录规范的详细归属，入口树用于导航：业务模块、启动、适配、前端、测试、配置、脚本、文档、生成物都要有位置；新增模块时同步树。实际目录与批准目标不同分别记录，不能把未迁移的目录说成现状。
 
 ## 补充类型与可选辅助
 
@@ -67,7 +67,7 @@ $ai-project-conventions help
 
 ## 安装与跨工具复用
 
-整个目录自包含，可复制到目标工具实际配置的技能目录：
+首次安装且目标目录不存在时，可复制完整目录到工具实际配置的技能位置：
 
 ```bash
 cp -R /path/to/ai-convertion /path/to/tool-skills/ai-project-conventions
@@ -75,7 +75,7 @@ cp -R /path/to/ai-convertion /path/to/tool-skills/ai-project-conventions
 
 目标工具的发现/调用/重载方式依其真实配置核实；复制不是加载验证。核心是 `SKILL.md`、`references/`、`assets/templates/`，辅助 `scripts/` 用 Python 3，`agents/openai.yaml` 仅为客户端 UI 适配。仅复用规范时可携带 references 与 templates，并在项目入口接入。详见 [工具适配](references/tool-adapters.md)。
 
-本机个人技能目录按实际配置选择；更新前核对并保留无关人工差异。通用基线为 **3.1.0**：补齐独立目录规范、按需服务入口和可运行的全套填实示例，六类 32 个稳定规则 ID 保留；[采用/升级说明](references/harness.md)。安装更新不会自动升级业务项目。
+更新已有安装时先记录哈希、核对本地差异，按批准文件逐项同步；不整体替换目录。通用基线为 **3.2.0**：具体规范命名、四种证据边界及列表筛选/条件修订演练，六类 32 个稳定规则 ID 保留；[采用/升级说明](references/harness.md)。安装更新不会自动升级业务项目。
 
 ## 资源
 

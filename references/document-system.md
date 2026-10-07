@@ -11,17 +11,17 @@
 | `AGENTS.md` **或** `CLAUDE.md` | 按实际工具选一个；全景、架构铁律、真实技术栈、代码目录归属、命令、条件读取 | [project-instructions.md](../assets/templates/project-instructions.md)；已有双入口约定使用 [AGENTS.md](../assets/templates/AGENTS.md) |
 | `docs/conventions/directory-structure.md` | 代码/配置/测试/迁移/需求/方案归属、依赖方向、新模块落位、正反例与检查；入口保留概要树并链接此处 | [directory-standard.md](../assets/templates/directory-standard.md) |
 | 服务子入口（沿用项目作用域） | 有独立职责/构建/数据/外部依赖/定时任务/特有约定时；引用根入口 | [service-instructions.md](../assets/templates/service-instructions.md) |
-| `docs/conventions/language.md` | 有业务代码；实际语言的命名、类型、错误、资源、并发、依赖、格式与检查 | [language-standard.md](../assets/templates/language-standard.md) |
-| `docs/conventions/frontend.md` | 有前端工程；组件/路由/状态/API/构建边界与代码落位 | [frontend-standard.md](../assets/templates/frontend-standard.md) |
-| `docs/conventions/ui.md` | 有页面/交互；组件与 token 来源、交互状态、布局与视觉验收 | [ui-standard.md](../assets/templates/ui-standard.md) |
-| `docs/conventions/database.md` | 有持久化数据；模型命名、约束、索引、事务、迁移与恢复规则 | [database-standard.md](../assets/templates/database-standard.md) |
-| `docs/conventions/requirements.md` | 有行为需求；如何写范围、规则、边界与可验证验收 | [requirements-standard.md](../assets/templates/requirements-standard.md) |
-| `docs/conventions/technical-design.md` | 如何记录实现方案；按复杂度选择短方案或独立设计，必答问题 | [technical-design-standard.md](../assets/templates/technical-design-standard.md) |
-| `docs/conventions/testing.md` | 有代码；测试位置、边界、隔离、回归选择与真实命令 | [testing-standard.md](../assets/templates/testing-standard.md) |
+| `docs/conventions/<语言>-standards.md` | 有业务代码；实际语言的命名、类型、错误、资源、并发、依赖、格式与检查 | [language-standard.md](../assets/templates/language-standard.md) |
+| `docs/conventions/frontend-standards.md` | 有前端工程；组件/路由/状态/API/构建边界与代码落位 | [frontend-standard.md](../assets/templates/frontend-standard.md) |
+| `docs/conventions/ui-standards.md` | 有页面/交互；组件与 token 来源、交互状态、布局与视觉验收 | [ui-standard.md](../assets/templates/ui-standard.md) |
+| `docs/conventions/database-standards.md` | 有持久化数据；模型命名、约束、索引、事务、迁移与恢复规则 | [database-standard.md](../assets/templates/database-standard.md) |
+| `docs/conventions/requirement-standards.md` | 有行为需求；如何写范围、规则、边界与可验证验收 | [requirements-standard.md](../assets/templates/requirements-standard.md) |
+| `docs/conventions/technical-design-standards.md` | 如何记录实现方案；按复杂度选择短方案或独立设计，必答问题 | [technical-design-standard.md](../assets/templates/technical-design-standard.md) |
+| `docs/conventions/testing-standards.md` | 有代码；测试位置、边界、隔离、回归选择与真实命令 | [testing-standard.md](../assets/templates/testing-standard.md) |
 | `docs/requirements/<topic>.md` | 本次确有需求要记录；具体目标、业务规则、AC 和修订 | [requirement.md](../assets/templates/requirement.md) |
 | `docs/designs/<topic>.md` | 本次需要独立方案；具体路径、契约、失败处理、兼容与验证 | [technical-design.md](../assets/templates/technical-design.md) |
 
-所有 `conventions` 文件是**规则**；`requirements/`、`designs/` 是**具体产物**，没有具体任务不生成示例需求/方案。多语言项目按需拆成 `language-go.md`、`language-java.md` 等，入口按路径条件读取，避免让无关栈规则进入上下文。架构规则默认在入口；复杂架构现有说明可链接，但入口仍包含明确铁律。
+所有 `conventions` 文件是**规则**；`requirements/`、`designs/` 是**具体产物**，没有具体任务不生成示例需求/方案。多语言项目按需拆成 `go-standards.md`、`java-standards.md` 等，入口按路径条件读取，避免让无关栈规则进入上下文。架构规则默认在入口；复杂架构现有说明可链接，但入口仍包含明确铁律。
 
 ### `init` 必须执行的生成步骤
 
@@ -35,7 +35,7 @@
 
 ## 输出长什么样
 
-教学示例（假设 Go API + Vue 管理端 + PostgreSQL；不是当前仓库事实）：
+文件位置示意（目录和栈仅说明写法；生成时以目标项目事实替换）：
 
 ```text
 AGENTS.md
@@ -49,18 +49,18 @@ scripts/                         # 开发/检查脚本
 docs/
   conventions/
     directory-structure.md
-    language.md
-    frontend.md
-    ui.md
-    database.md
-    requirements.md
-    technical-design.md
-    testing.md
+    <语言>-standards.md
+    frontend-standards.md
+    ui-standards.md
+    database-standards.md
+    requirement-standards.md
+    technical-design-standards.md
+    testing-standards.md
   requirements/                  # 有需求时才新增文件
   designs/                       # 有独立方案时才新增文件
 ```
 
-完整填好的入口、八份规则、具体需求/方案和原始代码见 [generated-example.md](generated-example.md)。示例不作为新项目默认栈；真实生成结果由项目证据决定。
+完整填好的入口、适用规则、具体需求/方案和原始代码见 [generated-example.md](generated-example.md)。示例不作为新项目默认栈；真实生成结果由项目证据决定。
 
 ## 可选 `add` 兼容路由
 

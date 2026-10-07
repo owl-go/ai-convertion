@@ -7,8 +7,8 @@ class TaskService:
             raise ValueError("标题需为 1–80 个字符")
         return self.repository.create(title.strip())
 
-    def list_tasks(self):
-        return self.repository.list_tasks()
+    def list_tasks(self, include_done=False):
+        return self.repository.list_tasks(include_done=include_done)
 
     def complete(self, task_id):
         task = self.repository.complete(task_id)

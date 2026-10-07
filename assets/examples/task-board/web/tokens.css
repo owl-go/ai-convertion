@@ -5,10 +5,11 @@ main { max-width: 44rem; margin: 3rem auto; padding: var(--space); }
 h1 { font-size: 2rem; margin: 0; }
 .eyebrow { font-size: .75rem; letter-spacing: .12em; color: var(--accent); }
 .row { display: flex; flex-wrap: wrap; gap: var(--space); }
-input { flex: 1; min-width: 12rem; padding: .7rem; border: 1px solid var(--border); }
+input:not([type="checkbox"]) { flex: 1; min-width: 12rem; padding: .7rem; border: 1px solid var(--border); }
 button { padding: .7rem 1rem; background: var(--accent); color: white; border: 0; cursor: pointer; }
 button:disabled { opacity: .6; cursor: wait; }
 :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 ul { list-style: none; padding: 0; }
 li { display: flex; justify-content: space-between; gap: var(--space); padding: var(--space) 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 li span { min-width: 0; }
+input[type="checkbox"] { min-width: 0; margin-right: .5rem; }

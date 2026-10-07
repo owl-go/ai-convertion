@@ -5,11 +5,16 @@ const input = document.querySelector("#title");
 const submit = document.querySelector("#submit");
 const status = document.querySelector("#status");
 const list = document.querySelector("#tasks");
+const includeDone = document.querySelector("#include-done");
+
+let loadRevision = 0;
 
 async function load() {
+  const revision = ++loadRevision;
   status.textContent = "加载中…";
   try {
-    const tasks = await listTasks();
+    const tasks = await listTasks(includeDone.checked);
+    if (revision !== loadRevision) return;
     list.replaceChildren();
     for (const task of tasks) {
       const item = document.createElement("li");
@@ -30,7 +35,7 @@ async function load() {
       list.append(item);
     }
     status.textContent = tasks.length ? `共 ${tasks.length} 个任务` : "暂无任务，添加第一个任务。";
-  } catch (error) { status.textContent = `${error.message}，可点击重试。`; }
+  } catch (error) { if (revision === loadRevision) status.textContent = `${error.message}，可点击重试。`; }
 }
 form.onsubmit = async (event) => {
   event.preventDefault();
@@ -41,4 +46,5 @@ form.onsubmit = async (event) => {
   finally { submit.disabled = false; }
 };
 document.querySelector("#retry").onclick = load;
+includeDone.onchange = load;
 load();
