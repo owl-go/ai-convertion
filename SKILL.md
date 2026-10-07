@@ -22,7 +22,7 @@ $ai-project-conventions workflow resume [task-record]
 $ai-project-conventions help
 ```
 
-这些是向代理传达的操作，不是本包独立 CLI；其他工具使用实际调用语法。`kind` 保持兼容：agents、project-map、glossary、architecture、standard、adr、design、requirement、runbook、exception、impact-map、harness、profile、database、migration、testing、ui、task；`standard` 可指定 language/code/frontend/ui/database/requirements/technical-design/testing 等范围。`help` 只列命令与 kind。
+这些是向代理传达的操作，不是本包独立 CLI；其他工具使用实际调用语法。`kind` 保持兼容：agents、project-map、glossary、architecture、standard、adr、design、requirement、runbook、exception、impact-map、harness、profile、database、migration、testing、ui、task；`standard` 可指定 directory/language/code/frontend/ui/database/requirements/technical-design/testing 等范围。`help` 只列命令与 kind。
 
 仅调用 skill、未给命令或具体开发意图：没有规范则 `init`，已有规范则 `sync`。维护命令不自动实施业务功能。用户要求开发/安装此 skill 本身时修改技能源文件，不初始化示例业务项目。
 
@@ -49,9 +49,9 @@ $ai-project-conventions help
 
 - 按实际工具创建 `AGENTS.md` **或** `CLAUDE.md`，沿用现有入口；未知工具按中立入口回退。默认不创建双入口。
 - 入口必须有项目用途/业务边界/模块系统关系、允许与禁止依赖和实现边界、真实技术栈及证据、权威目录树与全部受维护文件类别归属、新模块落位、真实命令及验证状态、条件读取。
-- 按适用性生成语言、前端、UI、数据库、需求、技术方案、测试规范；复用已有权威路径。每份以直接规则、合理短例、真实检查为主体，未知信息标待确认，无 UI/数据库不建空文件。
+- 生成目录规范，按适用性生成语言、前端、UI、数据库、需求、技术方案、测试规范；复用已有权威路径。每份有范围、具体规则、正确/错误例与真实检查，未知信息标待确认，无 UI/数据库不建空文件。独立服务的命令、数据和特有约定按需补服务入口。
 - 规范写法与具体需求/设计产物分开；本次没有具体需求/方案，不生成虚构业务文档。默认不生成 project-map/gates/adoption/impact-map/task/eval 文件。
-- 核对实际生成文件、目录归属、链接、命令及适用性，删除未填模板提示，交付路径和未验证项。填好的教学入口见 [示例](references/generated-example.md)，不是当前项目事实。
+- 核对实际生成文件、目录归属、链接、命令及适用性，删除未填模板提示，交付路径和未验证项。完整入口与八份填实规范、需求/方案及原始代码见 [示例](references/generated-example.md)，示例栈不是新项目默认。
 
 ### `sync`
 

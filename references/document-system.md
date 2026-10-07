@@ -9,6 +9,8 @@
 | 输出 | 何时生成 / 权威内容 | 模板 |
 |---|---|---|
 | `AGENTS.md` **或** `CLAUDE.md` | 按实际工具选一个；全景、架构铁律、真实技术栈、代码目录归属、命令、条件读取 | [project-instructions.md](../assets/templates/project-instructions.md)；已有双入口约定使用 [AGENTS.md](../assets/templates/AGENTS.md) |
+| `docs/conventions/directory-structure.md` | 代码/配置/测试/迁移/需求/方案归属、依赖方向、新模块落位、正反例与检查；入口保留概要树并链接此处 | [directory-standard.md](../assets/templates/directory-standard.md) |
+| 服务子入口（沿用项目作用域） | 有独立职责/构建/数据/外部依赖/定时任务/特有约定时；引用根入口 | [service-instructions.md](../assets/templates/service-instructions.md) |
 | `docs/conventions/language.md` | 有业务代码；实际语言的命名、类型、错误、资源、并发、依赖、格式与检查 | [language-standard.md](../assets/templates/language-standard.md) |
 | `docs/conventions/frontend.md` | 有前端工程；组件/路由/状态/API/构建边界与代码落位 | [frontend-standard.md](../assets/templates/frontend-standard.md) |
 | `docs/conventions/ui.md` | 有页面/交互；组件与 token 来源、交互状态、布局与视觉验收 | [ui-standard.md](../assets/templates/ui-standard.md) |
@@ -19,7 +21,7 @@
 | `docs/requirements/<topic>.md` | 本次确有需求要记录；具体目标、业务规则、AC 和修订 | [requirement.md](../assets/templates/requirement.md) |
 | `docs/designs/<topic>.md` | 本次需要独立方案；具体路径、契约、失败处理、兼容与验证 | [technical-design.md](../assets/templates/technical-design.md) |
 
-前七份 `conventions` 是**规则**；`requirements/`、`designs/` 是**具体产物**，没有具体任务不生成示例需求/方案。多语言项目按需拆成 `language-go.md`、`language-java.md` 等，入口按路径条件读取，避免让无关栈规则进入上下文。架构规则默认在入口；复杂架构现有说明可链接，但入口仍包含明确铁律。
+所有 `conventions` 文件是**规则**；`requirements/`、`designs/` 是**具体产物**，没有具体任务不生成示例需求/方案。多语言项目按需拆成 `language-go.md`、`language-java.md` 等，入口按路径条件读取，避免让无关栈规则进入上下文。架构规则默认在入口；复杂架构现有说明可链接，但入口仍包含明确铁律。
 
 ### `init` 必须执行的生成步骤
 
@@ -46,6 +48,7 @@ migrations/                      # 有序数据库迁移
 scripts/                         # 开发/检查脚本
 docs/
   conventions/
+    directory-structure.md
     language.md
     frontend.md
     ui.md
@@ -57,18 +60,18 @@ docs/
   designs/                       # 有独立方案时才新增文件
 ```
 
-完整填好的教学入口见 [generated-example.md](generated-example.md)。示例不作为新项目默认栈；真实生成结果由项目证据决定。
+完整填好的入口、八份规则、具体需求/方案和原始代码见 [generated-example.md](generated-example.md)。示例不作为新项目默认栈；真实生成结果由项目证据决定。
 
 ## 可选 `add` 兼容路由
 
-原有 kind 均保留，不由 `init` 自动补齐。`standard <scope>` 优先用上表对应规则模板（`code` 对应语言规则，`design` 对应方案规则）；未知专项才用 [standard.md](../assets/templates/standard.md)。`add agents` 默认更新实际入口，不能仅凭此命令推断要求双入口。
+原有 kind 均保留，不由 `init` 自动补齐。`standard <scope>` 优先用上表对应规则模板（`directory` 对应目录规则，`code` 对应语言规则，`design` 对应方案规则）；未知专项才用 [standard.md](../assets/templates/standard.md)。`add agents` 默认更新实际入口，不能仅凭此命令推断要求双入口。
 
 | kind | 模板 / 用途 |
 |---|---|
 | `architecture` | [architecture.md](../assets/templates/architecture.md)：复杂当前架构，与入口铁律互相链接 |
 | `adr` | [adr.md](../assets/templates/adr.md)：长期决策历史 |
 | `requirement` / `design` | 上表具体产物模板 |
-| `map` / `glossary` | [project-map.md](../assets/templates/project-map.md)、[domain-glossary.md](../assets/templates/domain-glossary.md) |
+| `project-map` / `map` / `glossary` | [project-map.md](../assets/templates/project-map.md)、[domain-glossary.md](../assets/templates/domain-glossary.md) |
 | `exception` / `runbook` | [exception.md](../assets/templates/exception.md)、[operations-runbook.md](../assets/templates/operations-runbook.md) |
 | `gates` / `impact-map` | [quality-gates.md](../assets/templates/quality-gates.md)、[document-impact-map.md](../assets/templates/document-impact-map.md) |
 | `harness` / `profile` | [harness-adoption.md](../assets/templates/harness-adoption.md)、[stack-profile.md](../assets/templates/stack-profile.md) |

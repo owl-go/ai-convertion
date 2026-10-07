@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>任务板 · 规范示例</title><link rel="stylesheet" href="/tokens.css"></head>
+<body><main><p class="eyebrow">PROJECT CONVENTIONS / EXAMPLE</p><h1>本地任务板</h1><p>记下待办，完成后保留记录。</p>
+<form><label for="title">任务标题</label><div class="row"><input id="title" name="title" required maxlength="80" aria-describedby="status"><button id="submit">添加任务</button></div></form>
+<p id="status" role="status" aria-live="polite"></p><button id="retry" type="button">重试加载</button><ul id="tasks"></ul>
+</main><script type="module" src="/page.mjs"></script></body></html>

@@ -1,78 +1,48 @@
-# 已填入口教学示例
+# 完整填实示例与演练
 
-下面是一份假设的 Go 订单 API + Vue 管理端入口正文，用于说明完成后的形态。所有路径、版本和命令都是假设证据，**不是本仓库事实，也没有运行这个业务项目**。实际 `init` 必须从目标仓库替换；不可把此例原样生成到项目。
+[task-board 示例目录](../assets/examples/task-board/) 是可运行的小型本地项目，包含原始配置/代码/测试，以及依这些事实填写的完整文档。它使用 Python 标准库、SQLite 和原生 JS，说明本技能不绑定 BOSS 示例的 Go/Kratos/GORM/Vue。实际 init 重新读取目标项目事实，不把此栈复制为默认。
 
----
+## 完成后的文件
 
-# 订单管理项目指引
+| 文件 | 已填内容 |
+|---|---|
+| [AGENTS.md](../assets/examples/task-board/AGENTS.md) | 全景、铁律、真实栈、概要树、命令/验证、条件读取；单服务的数据/外部依赖/任务说明 |
+| [directory-structure.md](../assets/examples/task-board/docs/conventions/directory-structure.md) | 所有代码/配置/测试/迁移/文档/生成物归属、实际依赖方向、正反例/检查 |
+| [language.md](../assets/examples/task-board/docs/conventions/language.md) | Python 与 JS 对应范围、输入/错误/资源/依赖、实际代码正反例与命令 |
+| [frontend.md](../assets/examples/task-board/docs/conventions/frontend.md) | 页面与 API 模块边界、服务端事实、构建及语法检查 |
+| [ui.md](../assets/examples/task-board/docs/conventions/ui.md) | 来自 tokens.css 的视觉值、页面状态、输入恢复、键盘/视口检查与限制 |
+| [database.md](../assets/examples/task-board/docs/conventions/database.md) | 真实 tasks schema、参数绑定、事务、幂等、迁移与恢复范围 |
+| [requirements.md](../assets/examples/task-board/docs/conventions/requirements.md) | 完整/简化/一句话加 AC 的写法、修订与检查 |
+| [technical-design.md](../assets/examples/task-board/docs/conventions/technical-design.md) | 触发条件、八问、路径和失败契约的正反例 |
+| [testing.md](../assets/examples/task-board/docs/conventions/testing.md) | unittest/JS/build 的实际配置、内存库隔离、结果与盲区 |
+| [具体需求](../assets/examples/task-board/docs/requirements/tasks.md) / [具体方案](../assets/examples/task-board/docs/designs/tasks.md) | 任务创建/完成的 AC、各处实现、数据流、接口/错误、兼容、验证、恢复 |
 
-## 项目全景
+每份规则都有适用范围、项目规则、正确/错误例和实际检查。单服务信息已在根入口，无需再造一份相同入口；多服务时采用 [服务模板](../assets/templates/service-instructions.md) 写子作用域增量。第二个 AI 工具接入时引用这个权威入口，避免复制全文。
 
-本项目让运营查询并取消尚未发货的订单。订单 API 负责状态与取消规则；管理端负责操作界面；支付系统负责实际退款，仓储系统负责发货。本项目不实现支付清算与库存调度。
+## 怎么演练
 
-管理端 → HTTP 适配 → order 用例 → Repository 接口 → PostgreSQL 适配。退款请求通过 Payment 接口到外部支付系统；启动入口组装依赖。本文件适用于全仓库。
+把示例复制到临时目录，保留配置/源码/测试、移除入口和 docs；读取 pyproject、CI、app 调用链、web 与 SQL，再按模板填写上述适用文件。init 是代理执行这些动作的语义，没有 `init` 可执行文件。已填文档可用于对照完成结果。
 
-## 架构铁律
+本轮（2026-10-07）在独立临时目录完成了源文件核对、逐项填写和链接检查；基线 8 项 unittest、两模块 JS 语法、build 通过。浏览器完成空列表→创建→完成，以及停止服务后错误展示、输入保留、按钮恢复。只报告本机执行范围：Python 3.14.7、Node 24.14.0、SQLite 3.53.4；GitHub CI/Python 3.11、390 视口、键盘/读屏、对比度、生产部署未验证。
 
-- `cmd/api` 可依赖所有实现以完成组装；HTTP/存储/支付适配可依赖 `internal/order` 的接口与类型。
-- `internal/order` 禁止导入 HTTP、PostgreSQL 与支付适配；跨边界仅使用其定义的接口。HTTP 层不得直接执行 SQL，数据库适配不得决定取消是否允许。
-- 取消权限在服务端验证。已发货订单拒绝取消；重复取消不能产生第二次退款。
-- 本地订单更新与退款意图持久化在一个事务提交；外部退款由任务执行并按业务键去重。失败保持可重试状态，不能把调用失败写成退款成功。
+## 一次需求变化怎样 sync
 
-## 实际技术栈（本例假设配置）
+模拟新要求：“默认隐藏已完成项，勾选后显示全部。”保留原 AC-T4-v1，并以 v2 替代默认行为，新增全部/非法参数 AC。读取调用方后改 http/service/storage 列表参数、web API/page/index，以及两个测试；先实现、验证，再同步具体需求/方案。
 
-| 组件 | 版本口径 | 证据 |
-|---|---|---|
-| Go | `go 1.23.0` 为声明要求；CI 使用 1.23.x | `go.mod`、`.github/workflows/ci.yml` |
-| Vue / TypeScript | 声明范围分别为 `^3.5.0` / `~5.6.0`；实际安装版本看锁文件 | `web/package.json`、`web/package-lock.json` |
-| PostgreSQL | 开发镜像主版本 16；生产版本待核实 | `compose.yaml` |
+可复查 [完整变更补丁](../assets/examples/task-board-sync.patch)。在临时示例根执行 `git apply --check /path/to/task-board-sync.patch` 检查，确认后 `git apply`；这是教学演练补丁，不应用于真实业务仓库。补丁是本轮实际差异，可重放；不是新的生成 CLI。
 
-## 权威代码目录与文件归属
+| 候选影响 | 结论与依据 |
+|---|---|
+| 具体需求/方案 | 已更新：旧/新 AC、include_done 入出参/非法值、默认语义兼容变化、验证和代码恢复 |
+| API/页面/测试源码 | 已更新：7 个代码/测试文件；10 项 unittest、JS/build 通过，浏览器默认隐藏与勾选显示通过 |
+| 入口全景/架构/目录/命令 | 无须改：模块职责、路径、依赖、命令和技术栈不变 |
+| 目录/语言/前端/UI 通用规则 | 无须改：新增筛选仍使用现有页面状态、API 和落位规则；具体文案/行为写在需求/方案 |
+| 数据库规则/迁移 | 无须改：schema/事务不变，没有新迁移或索引证据 |
+| 需求/方案/测试写法 | 无须改：AC 写法、八问、隔离方法和命令未变；只新增具体测试与实际结果 |
+| 旧数据/未知外部客户端/发布 | schema 不变无需数据迁移；未知客户端/生产发布未验证，不声称默认语义向后兼容 |
 
-```text
-cmd/api/main.go                  # 启动与依赖组装
-internal/order/                  # 状态、取消用例、Repository/Payment 接口
-internal/transport/http/         # 请求校验、身份映射、错误/响应转换
-internal/storage/postgres/       # SQL、Repository 实现与事务
-internal/integration/payment/    # 外部支付协议与错误映射
-internal/jobs/                   # 待退款任务调度与重试
-web/src/pages/                   # 路由页面与页面协调
-web/src/components/              # 公共展示/交互组件
-web/src/api/                     # 类型化 API 调用与错误转换
-web/src/styles/                  # token 与基础样式
-migrations/                      # 追加式有序 SQL 迁移
-scripts/                         # 开发与检查脚本
-docs/conventions/                # 项目具体规范
-docs/requirements/              # 具体需求与 AC 修订
-docs/designs/                   # 具体技术方案与实施状态
-docs/adr/                       # 长期决策及替代链
-.github/workflows/              # CI 配置
-go.mod / go.sum / compose.yaml   # 根构建依赖与开发环境配置
-web/package*.json / web/*config* # 前端依赖与构建配置
-```
+这次演练证明文件填写、引用可达、代码/文档同步与本机检查的实际范围；不是独立代理行为评估，也不证明其他客户端加载成功。
 
-新增订单规则放 `internal/order/`；新增外部适配放 `internal/integration/<system>/`；新领域放 `internal/<domain>/`，接口由使用它的领域定义，并同步本节。协议映射不得放领域目录。
+同步后的当前视口实测截图（勾选显示已完成项）：
 
-Go 单测与被测文件同目录，后缀 `_test.go`；数据库集成测试放存储适配目录，以测试约定隔离；前端测试与组件相邻，后缀 `.spec.ts`。静态资源放 `web/public/`，构建生成物 `web/dist/` 不手改、不提交。文档/脚本/配置按上表归属，禁止根目录散落业务文件。
-
-## 运行与检查（命令来源核实的示例，均未实际运行）
-
-| 用途 | 命令与工作目录 | 来源/前提 |
-|---|---|---|
-| API 启动 | 根目录 `go run ./cmd/api` | README；需数据库与环境配置 |
-| Go 检查 | 根目录 `go vet ./...`、`go test ./...` | CI；数据库集成测试另需测试环境 |
-| 前端启动 | `web/` 下 `npm run dev` | package.json |
-| 前端检查 | `web/` 下 `npm run typecheck`、`npm run test -- --run`、`npm run build` | package.json / CI |
-
-不能将这些示例命令记为已通过；真实项目还应填实际运行结果和未验证原因。
-
-## 条件读取
-
-- Go 代码：读 `docs/conventions/language-go.md`；前端 TS：读 `docs/conventions/language-ts.md`。
-- 组件、路由、状态、请求：读 `docs/conventions/frontend.md`；页面/交互/视觉再读 `docs/conventions/ui.md`。
-- 模型、查询、事务、迁移：读 `docs/conventions/database.md` 及相关迁移。
-- 行为变化：读 `docs/conventions/requirements.md` 和该任务具体需求（例如取消主题需求）；先找到实际文件，再引用。
-- 跨模块/契约/失败恢复：读 `docs/conventions/technical-design.md` 与相关方案/ADR。
-- 所有代码变更的验证：读 `docs/conventions/testing.md`，按影响选择真实检查。
-
-本例假设以上规则文件已经生成；实际项目不可链接不存在的文件。采用通用基线 3.0.0，具体规则按配置与项目决策落地。开发后同步受影响的入口、规则或需求/设计，报告实际结果。
+![任务板同步演练](../assets/examples/task-board-preview.png)

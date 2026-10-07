@@ -2,7 +2,7 @@
 
 把项目工程约定写成 AI 能直接使用的文件：一个完整项目入口，加少量具体规范。入口包含项目全景、架构铁律、真实技术栈、权威代码目录与文件归属、运行检查命令和条件读取；规范以行动条目、短例和实际检查为主体。
 
-对外介绍见 [公众号文章稿](docs/wechat-harness-skill.md)；已填入口与生成目录见 [教学示例](references/generated-example.md) 和 [默认文件契约](references/document-system.md)。教学示例不代表当前仓库事实。
+对外介绍见 [公众号文章稿](docs/wechat-harness-skill.md)；完整填实规范、原始教学代码与同步演练见 [教学示例](references/generated-example.md) 和 [默认文件契约](references/document-system.md)。教学项目可运行；它的栈和业务只属于该示例，不作为目标项目默认事实。
 
 ## 快速使用
 
@@ -29,6 +29,7 @@ $ai-project-conventions check
 AGENTS.md                     # 或 CLAUDE.md，实际工具入口
 docs/
   conventions/
+    directory-structure.md    # 文件归属、依赖方向、正反例与检查
     language.md               # 语言、错误、资源、并发、依赖与检查
     frontend.md               # 组件/路由/状态/请求/构建边界
     ui.md                     # 组件/token、交互状态、视觉验收
@@ -54,7 +55,7 @@ $ai-project-conventions help
 | kind | 内容 |
 |---|---|
 | `agents` | 补充实际入口；双入口仅按既有约定或明确要求 |
-| `standard` | 具体规则；scope 可用 code/language/frontend/ui/database/requirements/technical-design/testing 等 |
+| `standard` | 具体规则；scope 可用 directory/code/language/frontend/ui/database/requirements/technical-design/testing 等 |
 | `requirement` / `design` | 一次具体需求/方案 |
 | `architecture` / `map` / `glossary` | 确需单独维护的架构/模块地图/术语 |
 | `adr` / `runbook` / `exception` | 决策历史/运行恢复/明确例外 |
@@ -74,7 +75,7 @@ cp -R /path/to/ai-convertion /path/to/tool-skills/ai-project-conventions
 
 目标工具的发现/调用/重载方式依其真实配置核实；复制不是加载验证。核心是 `SKILL.md`、`references/`、`assets/templates/`，辅助 `scripts/` 用 Python 3，`agents/openai.yaml` 仅为客户端 UI 适配。仅复用规范时可携带 references 与 templates，并在项目入口接入。详见 [工具适配](references/tool-adapters.md)。
 
-本机个人技能目录按实际配置选择；更新前核对并保留无关人工差异。通用基线为 **3.0.0**：默认完整入口与具体规范替代旧的短索引和附加记录集合，六类 32 个稳定规则 ID 保留；[采用/升级说明](references/harness.md)。安装更新不会自动升级业务项目。
+本机个人技能目录按实际配置选择；更新前核对并保留无关人工差异。通用基线为 **3.1.0**：补齐独立目录规范、按需服务入口和可运行的全套填实示例，六类 32 个稳定规则 ID 保留；[采用/升级说明](references/harness.md)。安装更新不会自动升级业务项目。
 
 ## 资源
 

@@ -1,0 +1,208 @@
+diff --git a/app/http.py b/app/http.py
+index 62453ff..5f9eba6 100644
+--- a/app/http.py
++++ b/app/http.py
+@@ -1,5 +1,6 @@
+ import json
+ from pathlib import Path
++from urllib.parse import parse_qs
+ 
+ 
+ class Application:
+@@ -11,7 +12,11 @@ class Application:
+         status, content_type = "200 OK", "application/json; charset=utf-8"
+         try:
+             if method == "GET" and path == "/api/tasks":
+-                result = self.service.list_tasks()
++                query = parse_qs(environ.get("QUERY_STRING", ""), keep_blank_values=True)
++                values = query.get("include_done", ["0"])
++                if len(values) != 1 or values[0] not in {"0", "1"}:
++                    raise ValueError("include_done 需为 0 或 1")
++                result = self.service.list_tasks(include_done=values[0] == "1")
+             elif method == "POST" and path == "/api/tasks":
+                 length = int(environ.get("CONTENT_LENGTH") or 0)
+                 if not 0 < length <= 4096:
+diff --git a/app/service.py b/app/service.py
+index 6f690a7..8187d55 100644
+--- a/app/service.py
++++ b/app/service.py
+@@ -7,8 +7,8 @@ class TaskService:
+             raise ValueError("标题需为 1–80 个字符")
+         return self.repository.create(title.strip())
+ 
+-    def list_tasks(self):
+-        return self.repository.list_tasks()
++    def list_tasks(self, include_done=False):
++        return self.repository.list_tasks(include_done=include_done)
+ 
+     def complete(self, task_id):
+         task = self.repository.complete(task_id)
+diff --git a/app/storage.py b/app/storage.py
+index 63f94b5..cb6f526 100644
+--- a/app/storage.py
++++ b/app/storage.py
+@@ -20,8 +20,11 @@ class SQLiteRepository:
+         row = self.connection.execute("SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)).fetchone()
+         return dict(row) if row else None
+ 
+-    def list_tasks(self):
+-        return [dict(row) for row in self.connection.execute("SELECT id, title, done FROM tasks ORDER BY id")]
++    def list_tasks(self, include_done=False):
++        return [dict(row) for row in self.connection.execute(
++            "SELECT id, title, done FROM tasks WHERE (? = 1 OR done = 0) ORDER BY id",
++            (int(include_done),),
++        )]
+ 
+     def complete(self, task_id):
+         with self.connection:
+diff --git a/docs/designs/tasks.md b/docs/designs/tasks.md
+index 05d5011..e6dd9be 100644
+--- a/docs/designs/tasks.md
++++ b/docs/designs/tasks.md
+@@ -1,14 +1,18 @@
+ # 任务板实现方案
+ 
+-状态：已实现；本机自动检查已验证，浏览器专项见需求。对应 [任务需求](../requirements/tasks.md) 的 AC-T1 至 T6。
++状态：已实现；本机自动检查已验证，浏览器专项见需求。对应 [任务需求](../requirements/tasks.md) 的 AC-T1 至 T8（T4-v2 替代 v1）。
+ 
+ 1. **涉及模块**：app HTTP/service/storage 与 web 页面/API；server 组装。
+ 2. **各处改什么**：http.py 路由/映射；service.py 标题与存在性；storage.py 查询与事务；001_tasks.sql 建表；api.mjs 请求；page.mjs 状态；index.html 结构；tokens.css 样式；test_tasks.py 验收。归属由目录规范维护。
+-3. **数据流**：浏览器标题 → JSON → service.strip/验证 → storage 参数化插入 → JSON 任务 → DOM。完成把 done 赋 1，GET 按 id 返回全部，页面显示状态。
+-4. **接口**：GET /api/tasks → [{id,title,done}]；POST /api/tasks 输入 {title} → 201 任务；POST /api/tasks/{id}/complete 无正文 → 200 任务。非法输入 400 {error}，缺失 404 {error}。
++3. **数据流**：浏览器标题 → JSON → service.strip/验证 → storage 参数化插入 → JSON 任务 → DOM。完成把 done 赋 1，GET 默认筛 done=0，include_done=1 按 id 返回全部，页面显示状态。
++4. **接口**：GET /api/tasks?include_done=0|1 → [{id,title,done}]；省略为 0，非法/重复参数 400；POST /api/tasks 输入 {title} → 201 任务；POST /api/tasks/{id}/complete 无正文 → 200 任务。非法输入 400 {error}，缺失 404 {error}。
+ 5. **失败处理**：校验失败不写入；未知存储异常不包装成功；事务回滚，连接由 server 关闭。页面显示错误，恢复按钮；本机串行服务不含外部重试/定时任务。
+-6. **兼容影响**：这是初始接口/表，无旧版本迁移。只执行 001 建表；以后变更不能静默改已采用 SQL。没有账户，不声称对外安全或生产运行能力。
+-7. **验证方法**：根目录 unittest 8 项、node --check 两模块、build；UI 状态、视口和键盘按 UI 规范，未执行项单列。测试无生产数据。
++6. **兼容影响**：GET 默认语义由全部改为未完成；同仓页面新增复选框并通过 api.mjs 传参。未知外部调用方待确认，不能称向后兼容。schema 未变，无数据迁移。只执行 001 建表；以后变更不能静默改已采用 SQL。没有账户，不声称对外安全或生产运行能力。
++7. **验证方法**：根目录 unittest 10 项、node --check 两模块、build；UI 状态、视口和键盘按 UI 规范，未执行项单列。测试无生产数据。
+ 8. **恢复**：停止本机服务并恢复前一代码快照；保留 tasks.sqlite3。结构或数据恢复需另行备份/验证，此例没有破坏性迁移，不能把应用回退称数据恢复。无灰度平台或发布流程。
+ 
+ 实际路径与方案一致，自动验证结果见需求；当前无长期 ADR 决策，无需新建决策文件。
++
++## 本次落地差异
++
++在现有 http/service/storage.list_tasks 增加筛选参数，page/api/index 增加勾选读取；无新目录、无 SQL 迁移。tests 增加默认/显式全部/非法参数用例。恢复为回退这批代码与配套需求/方案，数据库数据保持不变；未做生产发布或数据恢复演练。
+diff --git a/docs/requirements/tasks.md b/docs/requirements/tasks.md
+index 069dfa6..4fbda37 100644
+--- a/docs/requirements/tasks.md
++++ b/docs/requirements/tasks.md
+@@ -4,7 +4,7 @@
+ 
+ ## 目标与范围
+ 
+-本机用户记录待办并标记完成。列表保留完成任务，便于确认操作结果；只含标题和完成状态。无账户、外部同步、删除、编辑、权限、支付或生产服务。
++本机用户记录待办并标记完成。默认列表只显示待完成项；勾选显示已完成任务后可查看全部；只含标题和完成状态。无账户、外部同步、删除、编辑、权限、支付或生产服务。
+ 
+ ## 规则与验收
+ 
+@@ -13,7 +13,9 @@
+ | AC-T1 | POST /api/tasks，title 为两端带空白的有效字符串 | 201，返回去空白的 title、整数 id、done=0；GET 可见 |
+ | AC-T2 | 空白、非字符串或超过 80 字符标题 | 400，列表和数据库不新增 |
+ | AC-T3 | 对现有任务 POST /api/tasks/{id}/complete，再重复调用 | 200、done=1；重复返回相同对象，不新增任务 |
+-| AC-T4-v1 | 完成任务后 GET /api/tasks | 返回全部任务，含已完成项，按 id 升序 |
++| AC-T4-v2 | 有已完成和未完成项，GET /api/tasks（省略或 include_done=0） | 只返回未完成项，按 id 升序 |
++| AC-T7 | GET /api/tasks?include_done=1 | 返回全部任务，含已完成项，按 id 升序 |
++| AC-T8 | include_done 为空、其他值或重复传入 | 400 {error}，不写数据 |
+ | AC-T5 | 完成不存在的任务或非法 id | 分别 404/400，不改其他数据 |
+ | AC-T6 | 页面空列表→创建→完成；失败或提交等待 | 显示空/数据/完成文字，等待禁用，失败保留输入与重试 |
+ 
+@@ -22,7 +24,11 @@
+ | AC | 实现位置 | 实际证据/状态 |
+ |---|---|---|
+ | T1/T2 | app/service.py、http.py、storage.py | test_create_and_list / test_invalid_title_leaves_data_unchanged，本机通过 |
+-| T3/T4-v1/T5 | 同上 | complete 幂等、unknown_task 测试通过；含完成项列表由本轮 HTTP 冒烟核对 |
++| T3/T4-v2/T5/T7/T8 | 同上 | 完成/缺失测试、test_active_default_and_opt_in_complete、test_invalid_filter；本轮 10 项通过 |
+ | T6 | web/page.mjs、index.html、tokens.css | 浏览器创建→完成可见、停止服务后失败保留输入与按钮恢复已验证；390 视口/键盘/读屏未验证 |
+ 
+-本机 Python 3.14.7，Node 24.14.0；unittest 8 项、JS 语法、build 通过。CI/部署/覆盖率未运行。相关实现方案见 [tasks](../designs/tasks.md)。
++本机 Python 3.14.7，Node 24.14.0；unittest 10 项、JS 语法、build 通过。CI/部署/覆盖率未运行。相关实现方案见 [tasks](../designs/tasks.md)。
++
++## 修订（2026-10-07 教学模拟新要求）
++
++AC-T4-v1 的旧结果为 GET 返回全部任务；新要求以 AC-T4-v2 替代，并新增 T7/T8。旧行为保留在这条修订记录；默认语义发生兼容变化，同仓页面随接口更新，未知外部客户端未验证。任务完成后在默认列表消失；勾选“显示已完成任务”再出现。一般需求写法、UI 状态规范和数据库 schema 不变。
+diff --git a/tests/test_tasks.py b/tests/test_tasks.py
+index b6f8c8f..13d42b3 100644
+--- a/tests/test_tasks.py
++++ b/tests/test_tasks.py
+@@ -16,10 +16,10 @@ class TaskTests(unittest.TestCase):
+         self.service = TaskService(self.repository)
+         self.app = Application(self.service)
+ 
+-    def request(self, method, path, body=None):
++    def request(self, method, path, body=None, query=""):
+         raw = json.dumps(body).encode() if body is not None else b""
+         status = []
+-        environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_LENGTH": str(len(raw)), "wsgi.input": io.BytesIO(raw)}
++        environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_LENGTH": str(len(raw)), "QUERY_STRING": query, "wsgi.input": io.BytesIO(raw)}
+         response = self.app(environ, lambda value, headers: status.append(value))
+         return status[0], json.loads(b"".join(response))
+ 
+@@ -41,6 +41,19 @@ class TaskTests(unittest.TestCase):
+         self.assertEqual(first[1]["done"], 1)
+         self.assertEqual(self.request("POST", f"/api/tasks/{task['id']}/complete"), first)
+ 
++    def test_active_default_and_opt_in_complete(self):
++        done = self.service.create("已做")
++        active = self.service.create("待做")
++        self.service.complete(done["id"])
++        self.assertEqual(self.request("GET", "/api/tasks")[1], [active])
++        all_tasks = self.request("GET", "/api/tasks", query="include_done=1")[1]
++        self.assertEqual([task["id"] for task in all_tasks], [done["id"], active["id"]])
++        self.assertEqual(all_tasks[0]["done"], 1)
++
++    def test_invalid_filter(self):
++        for query in ["include_done=yes", "include_done=", "include_done=1&include_done=0"]:
++            self.assertEqual(self.request("GET", "/api/tasks", query=query)[0], "400 Bad Request")
++
+     def test_unknown_task_and_bad_id(self):
+         self.assertEqual(self.request("POST", "/api/tasks/999/complete")[0], "404 Not Found")
+         self.assertEqual(self.request("POST", "/api/tasks/no/complete")[0], "400 Bad Request")
+diff --git a/web/api.mjs b/web/api.mjs
+index fac492b..b4c100a 100644
+--- a/web/api.mjs
++++ b/web/api.mjs
+@@ -4,7 +4,7 @@ async function request(path, options = {}) {
+   if (!response.ok) throw new Error(body.error || "请求失败");
+   return body;
+ }
+-export const listTasks = () => request("/api/tasks");
++export const listTasks = (includeDone = false) => request(`/api/tasks?include_done=${includeDone ? "1" : "0"}`);
+ export const createTask = (title) => request("/api/tasks", {
+   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title })
+ });
+diff --git a/web/index.html b/web/index.html
+index bfd0c59..1890d49 100644
+--- a/web/index.html
++++ b/web/index.html
+@@ -3,5 +3,6 @@
+ <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>任务板 · 规范示例</title><link rel="stylesheet" href="/tokens.css"></head>
+ <body><main><p class="eyebrow">PROJECT CONVENTIONS / EXAMPLE</p><h1>本地任务板</h1><p>记下待办，完成后保留记录。</p>
+ <form><label for="title">任务标题</label><div class="row"><input id="title" name="title" required maxlength="80" aria-describedby="status"><button id="submit">添加任务</button></div></form>
++<label><input id="include-done" type="checkbox">显示已完成任务</label>
+ <p id="status" role="status" aria-live="polite"></p><button id="retry" type="button">重试加载</button><ul id="tasks"></ul>
+ </main><script type="module" src="/page.mjs"></script></body></html>
+diff --git a/web/page.mjs b/web/page.mjs
+index cfec1f4..c1f29ad 100644
+--- a/web/page.mjs
++++ b/web/page.mjs
+@@ -5,11 +5,12 @@ const input = document.querySelector("#title");
+ const submit = document.querySelector("#submit");
+ const status = document.querySelector("#status");
+ const list = document.querySelector("#tasks");
++const includeDone = document.querySelector("#include-done");
+ 
+ async function load() {
+   status.textContent = "加载中…";
+   try {
+-    const tasks = await listTasks();
++    const tasks = await listTasks(includeDone.checked);
+     list.replaceChildren();
+     for (const task of tasks) {
+       const item = document.createElement("li");
+@@ -41,4 +42,5 @@ form.onsubmit = async (event) => {
+   finally { submit.disabled = false; }
+ };
+ document.querySelector("#retry").onclick = load;
++includeDone.onchange = load;
+ load();
