@@ -1,181 +1,85 @@
 # AI Project Conventions
 
-可跨工具复用的工程 Harness skill，覆盖架构、代码、数据库、需求、测试、UI，连接规则、门禁、交付证据与长期维护，并通过 `workflow` 指导具体开发协作任务。核心基线采用“通用基线＋技术栈补充＋项目约定”三层，当前版本见 [Harness 采用说明](references/harness.md)。
+把项目工程约定写成 AI 能直接使用的文件：一个完整项目入口，加少量具体规范。入口包含项目全景、架构铁律、真实技术栈、权威代码目录与文件归属、运行检查命令和条件读取；规范以行动条目、短例和实际检查为主体。
 
-从代码、配置、测试、批准决策和 Git 变化中收集证据，按适用性创建最小文档集。实际工具入口优先；兼容双入口镜像只在已有约定或显式 `add agents` 时采用。
+对外介绍见 [公众号文章稿](docs/wechat-harness-skill.md)；已填入口与生成目录见 [教学示例](references/generated-example.md) 和 [默认文件契约](references/document-system.md)。教学示例不代表当前仓库事实。
 
-## 复用与工具适配
+## 快速使用
 
-源码目录自包含。可将整个目录复制到目标工具实际配置的技能目录：
+在目标项目调用（下面是支持命名调用的代理语法示例，并非独立 CLI）：
+
+```text
+$ai-project-conventions init
+$ai-project-conventions sync origin/main
+$ai-project-conventions audit origin/main
+$ai-project-conventions check
+```
+
+`init [path]` 从代码/配置/测试/CI 和已有需求读取证据，真正创建或合并适用文件；省略路径用当前工作区。按实际工具选择 `AGENTS.md` **或** `CLAUDE.md`，不默认两份；未知工具使用完整中立入口并标记接入待确认。保留既有人工约定和工作区改动。
+
+`sync [git-ref]` 更新实际受影响的入口段落、规则或具体需求/设计。指定 ref 的证据脚本比较 `<ref>...HEAD`，并纳入暂存/未暂存/未跟踪路径；无 ref 则说明当前范围及历史盲区。需求/决策变化也是输入。明确新要求可修订旧规范；当前/计划、实施/验证分开，AC/ADR 历史与冲突保持可见。
+
+`audit [git-ref]` 只读核对事实、目录归属、规范、链接、命令与需求实现差异；`check [path]` 只读检查结构和质量，报告证据、评分、单文件规模及 dead code 候选。候选需确认后才可删除。
+
+## 默认生成内容
+
+假设带前端和数据库的项目（按真实适用性裁剪，不创建空文件）：
+
+```text
+AGENTS.md                     # 或 CLAUDE.md，实际工具入口
+docs/
+  conventions/
+    language.md               # 语言、错误、资源、并发、依赖与检查
+    frontend.md               # 组件/路由/状态/请求/构建边界
+    ui.md                     # 组件/token、交互状态、视觉验收
+    database.md               # 模型、约束、查询、事务、迁移规则
+    requirements.md           # 需求与 AC 怎样写
+    technical-design.md       # 实现方案怎样写
+    testing.md                # 测试位置、选择、隔离与真实命令
+  requirements/               # 有具体需求时新增文件
+  designs/                    # 有具体方案时新增文件
+```
+
+多语言按目录拆语言文件；无前端/数据库不生成相应规则。已有权威文档优先复用路径。入口是项目事实与架构/目录约定的权威位置；具体规范不是入口的重复全文，需求与方案产物不是规范的副本。不默认生成地图、门禁、采用记录、影响图、任务账本或 eval 文件。
+
+所有项目新增代码和文件遵循入口树与归属表：业务模块、启动、适配、前端、测试、配置、脚本、文档、生成物都要有位置；新增模块时同步树。实际目录与批准目标不同分别记录，不能把未迁移的目录说成现状。
+
+## 补充类型与可选辅助
+
+```text
+$ai-project-conventions add <kind> [scope]
+$ai-project-conventions help
+```
+
+| kind | 内容 |
+|---|---|
+| `agents` | 补充实际入口；双入口仅按既有约定或明确要求 |
+| `standard` | 具体规则；scope 可用 code/language/frontend/ui/database/requirements/technical-design/testing 等 |
+| `requirement` / `design` | 一次具体需求/方案 |
+| `architecture` / `map` / `glossary` | 确需单独维护的架构/模块地图/术语 |
+| `adr` / `runbook` / `exception` | 决策历史/运行恢复/明确例外 |
+| `gates` / `impact-map` / `harness` / `profile` | 明确需要时的检查映射/影响图/采用记录/栈补充 |
+| `database` / `migration` | 当前模型/一次迁移，区别于数据库规则 |
+| `testing` / `ui` / `task` | 具体测试策略/页面规格/交接记录 |
+
+日常只需先读入口再提出需求；需要协作辅助时可用 `workflow <task>` / `workflow resume [record]`。辅助流程见 [development-workflow.md](references/development-workflow.md)，不作为默认阶段/账本系统。只调用 skill 且未明确任务时，缺规范执行 init，已有规范执行 sync。实现、提交、发布分别沿任务实际授权。
+
+## 安装与跨工具复用
+
+整个目录自包含，可复制到目标工具实际配置的技能目录：
 
 ```bash
 cp -R /path/to/ai-convertion /path/to/tool-skills/ai-project-conventions
 ```
 
-只使用规范核心时，复制 `references/` 和 `assets/templates/`，并在项目实际入口加入按变更条件读取的路由。目标工具的技能发现/调用/重新加载依据其真实配置核实；复制不等于加载验证。可选 `scripts/` 使用 Python 3，`agents/openai.yaml` 仅为 Codex UI 适配。详见 [工具适配边界](references/tool-adapters.md)。
+目标工具的发现/调用/重载方式依其真实配置核实；复制不是加载验证。核心是 `SKILL.md`、`references/`、`assets/templates/`，辅助 `scripts/` 用 Python 3，`agents/openai.yaml` 仅为客户端 UI 适配。仅复用规范时可携带 references 与 templates，并在项目入口接入。详见 [工具适配](references/tool-adapters.md)。
 
-本机可安装到配置的个人技能目录（Codex 使用 `$CODEX_HOME/skills`，未设置时为 `~/.codex/skills`）；更新已有安装时核对差异并保留无关人工内容。
+本机个人技能目录按实际配置选择；更新前核对并保留无关人工差异。通用基线为 **3.0.0**：默认完整入口与具体规范替代旧的短索引和附加记录集合，六类 32 个稳定规则 ID 保留；[采用/升级说明](references/harness.md)。安装更新不会自动升级业务项目。
 
-## 快速开始
+## 资源
 
-在需要建立规范的项目中调用 skill；以下保留本机 Codex 的命名调用示例：
-
-```text
-$ai-project-conventions init
-```
-
-skill 会自动识别项目根目录、语言、技术栈、已有文档和真实工程命令，不要求预先填写长篇项目说明。
-
-规范建立/维护使用 `init`、`add`、`sync`、`audit`、`check`；这些命令不自动实施业务功能。具体开发任务使用下面的流程入口，按任务意图和实际授权协作。
-
-### 指导具体任务与恢复
-
-```text
-$ai-project-conventions workflow 实现订单取消原因，先核实批准需求、兼容与验收，再按影响实现和验证。
-$ai-project-conventions workflow 只读评审取消原因方案的边界、迁移与验收缺口。
-$ai-project-conventions workflow resume docs/tasks/order-cancellation.md
-```
-
-这是向支持此语法的代理发送的指令，路径是任务记录示例，其他工具按真实配置接入。也可明确要求“按本 skill 开发流程设计/实现/评审某任务”。咨询/设计/评审按只读意图执行，实施任务在已有授权范围修改并验证；提交、发布、生产与外部写入仍需实际任务授权。
-
-[开发协作流程](references/development-workflow.md) 覆盖需求、现状影响、方案与小步、实现、验证、评审交付、按授权发布观察、反馈维护。按风险裁剪阶段，不逐步暂停、不要求全套文档或全量测试。每项任务保留目标、范围、依据、验收、验证方法、进度和未决项；长任务记录版本、工作区、决策、剩余项与下一步，恢复先核实当前状态并复用有效证据。
-
-## 命令
-
-### 初始化规范
-
-```text
-$ai-project-conventions init [path]
-```
-
-扫描项目并创建适合当前规模的最小规范体系。省略 `path` 时使用当前工作区。
-
-### 同步规范
-
-```text
-$ai-project-conventions sync [git-ref]
-```
-
-根据需求/架构决策和代码变化建立文档影响清单，更新已授权权威来源、追踪与链接。指定 `git-ref` 时脚本使用 merge-base 到 HEAD 的已提交差异，加上暂存、未暂存和未跟踪路径：
-
-```text
-$ai-project-conventions sync origin/main
-```
-
-省略基线时检查当前工作区及用户提供的需求/决策变化，并说明覆盖范围。每项影响判定为已更新、不适用或待确认；需求→实现/测试证据保持可追踪，代码与批准需求冲突保留待决，旧 ADR 用取代关系保留历史。
-
-### 审计规范
-
-```text
-$ai-project-conventions audit [git-ref]
-```
-
-只读检查文档漂移、冲突、缺口、失效命令、重复规则和待确认事项，不修改项目文件。
-
-### 检测项目结构
-
-```text
-$ai-project-conventions check [path]
-```
-
-只读检查项目的依赖方向、模块划分、职责边界、变更局部性、耦合度、抽象层次、测试/构建和长期演进健康度，并按 0/3/5 评分表给出加权总分、证据和改进建议。代码质量专项覆盖单文件规模、dead code、代码风格、缺陷与潜在 Bug、安全漏洞、复杂度与可维护性、重复代码、测试覆盖和代码坏味道。该检测不会修改项目；启发式候选必须结合项目真实工具和人工检查确认。
-
-### 增补单类文档
-
-```text
-$ai-project-conventions add <kind> [scope]
-```
-
-常用示例：
-
-```text
-$ai-project-conventions add adr
-$ai-project-conventions add standard backend
-$ai-project-conventions add runbook deployment
-$ai-project-conventions add gates
-```
-
-支持的 `kind`：
-
-| kind | 生成内容 |
-|---|---|
-| `agents` | 同时创建或更新 `AGENTS.md` 与 `CLAUDE.md` |
-| `map` | 项目和模块职责地图 |
-| `glossary` | 领域词汇表 |
-| `architecture` | 当前架构与数据流 |
-| `standard` | 带规则 ID 和验证方式的工程规范 |
-| `gates` | 按变更类型组织的质量门禁 |
-| `requirement` | 可验证的需求文档 |
-| `design` | 技术方案 |
-| `adr` | 架构决策记录 |
-| `runbook` | 部署、回滚或事故处置手册 |
-| `exception` | 临时规范例外记录 |
-| `impact-map` | 变化类型到权威文档的回补映射 |
-| `harness` | 三层规范采用、六类适用性与版本升级差异 |
-| `profile` | 技术栈配置、规则实现与真实检查命令 |
-| `database` | 当前数据模型与查询/事务依据 |
-| `migration` | 一次迁移、旧数据/兼容与恢复计划 |
-| `testing` | 风险驱动测试选择、隔离与结果 |
-| `ui` | token/组件、状态/交互与视觉验收 |
-| `task` | 进度、完成证据、失败恢复与交接 |
-
-### 查看帮助
-
-```text
-$ai-project-conventions help
-```
-
-仅调用 `$ai-project-conventions`、不带命令也未明确请求具体开发流程时：缺少 AI 规范的项目执行 `init`，已有规范的项目执行 `sync`。
-
-## 生成结构
-
-skill 会按需创建文件，不要求补齐所有目录。以下为采用兼容双入口时的例子；其他工具使用实际入口：
-
-```text
-AGENTS.md                  # AI 协作入口
-CLAUDE.md                  # 与 AGENTS.md 完全一致
-docs/
-|-- project-map.md
-|-- domain-glossary.md
-|-- architecture.md
-|-- requirements/
-|-- designs/
-|-- adr/
-|-- standards/
-|   |-- engineering.md
-|   |-- security.md
-|   `-- quality-gates.md
-`-- operations/
-    |-- deployment.md
-    |-- rollback.md
-    `-- incident-response.md
-```
-
-采用镜像约定时 `AGENTS.md` 是编辑源，`CLAUDE.md` 是逐字节镜像；独立作用域入口遵守已有项目配置。规范正文与实际架构、模型、需求、测试和 UI 产物分开，入口只保存短路由与必要约定。
-
-## 更新 skill
-
-将最终源文件更新到实际安装目录，先核对安装内的人工差异。技能更新不自动升级项目基线：先 `audit` 比较版本/规则 ID，按项目批准流程采用，`sync` 更新适用规则与门禁。无需对业务项目自动运行初始化。
-
-## 工作原则
-
-- 以当前代码、配置、测试和实际运行结果作为主要证据。
-- 不猜测版本、命令、负责人、业务边界或生产流程。
-- 只创建能够指导工作、可以验证且值得持续维护的文档。
-- 保留项目已有规则和未提交改动，避免无关重写。
-- 只有业务、安全、权限、生产操作或已批准决策无法安全推断时才询问用户。
-
-## 项目内容
-
-- [`SKILL.md`](SKILL.md)：命令入口与执行约束。
-- [`references/document-system.md`](references/document-system.md)：文档选型和模板路由。
-- [`references/maintenance-workflow.md`](references/maintenance-workflow.md)：持续审计与回补流程。
-- [`references/development-workflow.md`](references/development-workflow.md)：具体开发任务、各阶段退出条件、反馈与中断恢复。
-- [`references/baseline-rules.md`](references/baseline-rules.md)：通用安全、授权和质量基线。
-- [`assets/templates/`](assets/templates/)：按需使用的文档模板。
-- [`scripts/collect_project_evidence.py`](scripts/collect_project_evidence.py)：只读项目证据采集工具。
-- [`scripts/check_project_health.py`](scripts/check_project_health.py)：只读项目结构、单文件规模和 dead code 信号采集工具。
-- [`scripts/check_code_quality.py`](scripts/check_code_quality.py)：只读代码风格、缺陷、安全、复杂度、重复、覆盖率和坏味道信号采集工具。
-
-- [references/harness.md](references/harness.md)：三层采用、版本和任务闭环。
-- [references/tool-adapters.md](references/tool-adapters.md)：跨工具复用与入口适配。
+- [SKILL.md](SKILL.md)：执行契约与命令。
+- [文件契约与全部模板路由](references/document-system.md)：生成什么、何时生成、如何填写。
+- [维护映射](references/maintenance-workflow.md)：变化具体更新哪个文件。
+- [语言落地](references/language-profiles.md)：Go / Java 的配置、短例与检查依据。
+- [证据采集](scripts/collect_project_evidence.py)、[结构检查](scripts/check_project_health.py)、[质量检查](scripts/check_code_quality.py)：可选只读辅助；不代替项目实际工具。

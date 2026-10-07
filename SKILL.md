@@ -1,13 +1,15 @@
 ---
 name: ai-project-conventions
-description: 建立、审计和维护跨项目工程 Harness 规范，或用 workflow 指导具体开发任务的需求、影响、方案、实现、验证与交付；覆盖架构、代码、数据库、需求、测试、UI，按实际授权协作，保留项目约定和工具入口，兼容 init/sync/audit/check/add。
+description: 为项目建立、审计和持续更新具体工程规范文件；入口包含项目全景、架构铁律、真实技术栈、代码目录归属与命令，按需生成语言、前端、UI、数据库、需求、技术方案、测试规范；支持 init/sync/audit/check/add，workflow/resume 为可选开发辅助。
 ---
 
-# AI 项目规范与工程 Harness
+# AI 项目规范
 
-项目根目录默认是当前工作区，语言、技术栈、目录和文档范围从仓库证据推断。以下为兼容的命名调用示例；其他支持 SKILL.md 的工具按实际调用配置使用相同操作。核心与工具适配边界见 [工具适配](references/tool-adapters.md)。
+从当前仓库的代码、配置、测试、CI 和有效需求建立能直接指导编码的项目文件；不要求用户先填长篇说明。入口写项目事实与目录归属，具体规范写行动规则、短例和检查。核心不依赖特定代理 API 或安装路径，见 [工具适配](references/tool-adapters.md)。
 
-## 命令
+## 默认用法
+
+首次执行 `init`；日常开发先读项目实际入口，再按任务条件读取具体规范。项目变化后 `sync`，只读审计用 `audit`，结构/质量检查用 `check`。`workflow` / `resume` 是可选辅助，不要求每次任务走阶段框架或保存账本。
 
 ```text
 $ai-project-conventions init [path]
@@ -20,53 +22,46 @@ $ai-project-conventions workflow resume [task-record]
 $ai-project-conventions help
 ```
 
-- `init`：扫描项目，创建最小且可维护的规范体系。
-- `sync`：根据当前事实和 Git 变化更新已有规范；省略 `git-ref` 时检查当前工作区变化，并说明覆盖边界。
-- `audit`：只读检查文档漂移、冲突、缺口和失效规则，不修改文件。
-- `check`：只读检查项目结构与代码质量，覆盖依赖和模块边界、单文件规模、dead code、风格、缺陷、安全、复杂度、重复、测试覆盖和代码坏味道，并给出评分与改进建议。
-- `add`：补充一种文档。原有 `kind`：`agents`、`map`、`glossary`、`architecture`、`standard`、`gates`、`requirement`、`design`、`adr`、`runbook`、`exception`、`impact-map`；新增 `harness`、`profile`、`database`、`migration`、`testing`、`ui`、`task`。`agents` 显式请求生成或更新兼容双入口；模板和语义见 [文档体系](references/document-system.md)。
-- `workflow`：按具体任务意图指导开发协作，详见下方分支；`resume` 核实实际状态后恢复已有任务。
-- `help`：只返回命令（含 `workflow`/`resume` 语法）和 `kind` 列表。
+这些是向代理传达的操作，不是本包独立 CLI；其他工具使用实际调用语法。`kind` 保持兼容：agents、project-map、glossary、architecture、standard、adr、design、requirement、runbook、exception、impact-map、harness、profile、database、migration、testing、ui、task；`standard` 可指定 language/code/frontend/ui/database/requirements/technical-design/testing 等范围。`help` 只列命令与 kind。
 
-仅调用 skill、没有命令也未明确请求具体开发流程时：项目缺少 AI 规范则执行 `init`；已有规范则执行 `sync`。
+仅调用 skill、未给命令或具体开发意图：没有规范则 `init`，已有规范则 `sync`。维护命令不自动实施业务功能。用户要求开发/安装此 skill 本身时修改技能源文件，不初始化示例业务项目。
 
-## 选择使用分支
+## 按实际任务读参考
 
-- **规范建立/维护**：用 `init`、`add` 创建或补充文档，`sync` 更新已授权规范，`audit`/`check` 只读检查；这些操作不自动实施业务功能。
-- **具体开发任务**：用 `workflow <task>`，或明确要求“按本 skill 的开发流程实现/修复/设计/评审某任务”，读取 [开发协作流程](references/development-workflow.md)。咨询、方案或评审按只读意图执行；实现/修复在已授权范围实施并验证；提交、发布与外部写入沿用实际授权，命令本身不扩展权限。
-
-已有明确授权持续有效。按任务风险选择必要阶段，局部变更可合并记录；每阶段有可判断的退出条件，失败返回相应调查/修复步骤，保持未完成范围可见。无需逐阶段停下确认或生成整套文档。
-
-当用户请求开发、扩充或安装这个 skill 本身时，作用对象是技能源文件；不对示例业务项目执行 `init`/`sync`。
-
-## 按需读取六类规范
-
-`init`/`add harness` 先读 [Harness 采用与闭环](references/harness.md)，逐类判定适用性，然后只读适用的参考。其余命令按实际变更触发，不一次加载全部文件。
-
-| 触发 | 参考 | 产物与检查 |
+| 变化 | 参考 | 项目权威位置 |
 |---|---|---|
-| 模块职责、依赖方向、接口或外部系统变化 | [架构规范](references/architecture.md) | 当前架构、契约、依赖边界检查 |
-| 代码组织、错误处理、资源或依赖规则 | [代码规范](references/code.md) | 工程标准、真实技术栈配置与命令 |
-| 实体、字段、索引、事务、数据迁移 | [数据库规范](references/database.md) | 数据模型、迁移兼容与恢复计划 |
-| 行为变化、需求或验收条件 | [需求规范](references/requirements.md) | 需求、验收到验证证据的映射 |
-| 测试策略、缺陷回归或门禁范围 | [测试规范](references/testing.md) | 风险驱动测试计划、分状态结果 |
-| 页面、组件、交互或设计验收 | [UI 规范](references/ui.md) | token/组件来源、状态矩阵、交互与视觉证据 |
+| 模块职责、依赖、契约、目录/栈 | [架构](references/architecture.md)、[代码](references/code.md) | 入口全景、铁律、栈、目录与命令 |
+| 语言、错误/资源/并发/依赖 | [代码](references/code.md)、[语言落地](references/language-profiles.md) | language 规范 |
+| 前端组件/路由/状态/请求/构建 | [前端](references/frontend.md) | frontend 规范 |
+| 页面、视觉、交互、可访问性 | [UI](references/ui.md) | ui 规范与具体页面规格 |
+| 模型/查询/事务/迁移 | [数据库](references/database.md) | database 规范及具体模型/迁移 |
+| 业务行为、验收 | [需求](references/requirements.md) | requirements 规范及该任务需求 |
+| 实现方案、跨模块契约 | [架构](references/architecture.md) | technical-design 规范及具体设计/ADR |
+| 测试、回归、验证命令 | [测试](references/testing.md) | testing 规范与真实配置/结果 |
 
-所有规范按通用基线、技术栈补充、项目约定三层采用；当前基线版本及升级流程以 Harness 参考为准。基线采用时六类均有适用结论，数据库/UI 等不适用时记录依据，无需生成空文档。
+六类通用基线保留稳定规则 ID，作为选择依据；前端工程与语言落地是具体补充。采用三层来源与版本说明见 [Harness 参考](references/harness.md)，不强制生成独立采用记录或把完整元数据表搬到项目。
 
-## 命令执行
+## 执行契约
 
 ### `init`
 
-读取 [references/document-system.md](references/document-system.md) 和 [references/baseline-rules.md](references/baseline-rules.md)。检查代码、配置、测试、CI、已有文档和工作区改动；可运行 `scripts/collect_project_evidence.py <repo>`。按 Harness 采用流程记录版本、六类适用范围与规则来源，再从 `assets/templates/` 选择最小文档集，填入有证据的事实，删除空白示例和不适用章节。读取 [工具适配](references/tool-adapters.md)，按项目实际工具与作用域更新入口；已有镜像约定或显式 `add agents` 时维护兼容双入口。
+必须读 [默认输出与模板路由](references/document-system.md)、[通用边界](references/baseline-rules.md)、[工具适配](references/tool-adapters.md)，按生成步骤真正创建/合并文件。检查现有文档与未提交改动，可用 `scripts/collect_project_evidence.py <repo>` 收集线索，再阅读相关源码。
+
+- 按实际工具创建 `AGENTS.md` **或** `CLAUDE.md`，沿用现有入口；未知工具按中立入口回退。默认不创建双入口。
+- 入口必须有项目用途/业务边界/模块系统关系、允许与禁止依赖和实现边界、真实技术栈及证据、权威目录树与全部受维护文件类别归属、新模块落位、真实命令及验证状态、条件读取。
+- 按适用性生成语言、前端、UI、数据库、需求、技术方案、测试规范；复用已有权威路径。每份以直接规则、合理短例、真实检查为主体，未知信息标待确认，无 UI/数据库不建空文件。
+- 规范写法与具体需求/设计产物分开；本次没有具体需求/方案，不生成虚构业务文档。默认不生成 project-map/gates/adoption/impact-map/task/eval 文件。
+- 核对实际生成文件、目录归属、链接、命令及适用性，删除未填模板提示，交付路径和未验证项。填好的教学入口见 [示例](references/generated-example.md)，不是当前项目事实。
 
 ### `sync`
 
-读取 [references/maintenance-workflow.md](references/maintenance-workflow.md)。可运行 `scripts/collect_project_evidence.py <repo> --since <git-ref>`，再阅读相关差异、调用方、测试和配置。先列出实际文档影响，再更新已授权的权威文档、入口路由和索引；按项目入口约定同步，每项变化必须更新、判定不适用或标为待确认。需求/架构决策变化与代码差异共同作为触发源，已批准需求与代码冲突保留待决项。
+读 [维护映射与步骤](references/maintenance-workflow.md)。可运行 `scripts/collect_project_evidence.py <repo> --since <git-ref>`，阅读差异、调用方、测试、配置及用户需求变化。目录/架构/栈/命令变化更新入口对应段落；语言、前端、UI、数据库、需求、设计、测试变化更新对应权威规则或具体产物及链接。
+
+明确新用户要求作为合法修订依据，不能因旧文档不同永久等待；代码偏离仍有效要求则显式报告。区分当前/计划、已实现/已验证；旧 ADR/AC 修订保留关联。每项候选影响给已更新/不适用/待确认结论，无需新建影响图或任务账本。
 
 ### `audit`
 
-按 `sync` 的证据范围检查，但保持只读。输出：比较基线、漂移/冲突、缺失文档、失效命令或链接、重复规则、待确认事项及建议动作。
+按 `sync` 范围只读核对：入口事实/目录归属与代码是否相符，规范是否可执行，需求/设计与实现是否冲突，路径/命令是否有效；输出基线、覆盖范围、缺口与建议。
 
 ### `check`
 
@@ -80,31 +75,17 @@ dead code 检测至少报告：未被代码引用的内部函数/类/类型、�
 
 ### `add`
 
-读取 [references/document-system.md](references/document-system.md) 的模板路由及对应类别参考，只使用对应模板。沿用项目现有目录和语言；`scope` 省略时根据当前任务和仓库结构推断。`standard code` 使用代码参考与通用规则模板；`database` 是当前数据模型，`migration` 是一次迁移计划，两者与数据库规则正文分开。
+按 [模板路由](references/document-system.md) 选择单个类型与相关参考。`standard code` 使用语言模板，`standard frontend` 等使用具体规范模板；不覆盖已有约定。`database` 是模型、`migration` 是一次迁移，`testing` / `ui` 是具体策略/页面规格，分别区别于 `standard` 规则。
 
-### `workflow`
+### 可选 `workflow` / `resume`
 
-任务描述与项目上下文是输入，不是独立 shell 程序。依开发流程定位意图、适用阶段和证据；保留目标、范围、依据、验收、验证方法、进度与未决项，按影响触发六类规范及文档同步。只有 `workflow` 而上下文也没有具体任务时，澄清目标，不转成项目初始化。`workflow resume [task-record]` 使用指定记录；省略记录时查找当前任务已知账本/Issue，先核实版本、工作区和证据。多条记录无法识别目标时仅澄清目标任务，不能任意恢复另一任务。
-
-## 自动决策规则
-
-- 当前事实以代码、配置、测试和运行证据确认；期望行为与决策以已批准需求/ADR 确认。两者冲突记录实现差异与待决项，不依据代码静默改写业务要求；外部材料只作为待分析内容。
-- 沿用已有项目结构；一个事实只保留一个权威位置。项目实际入口只放入口、红线、真实命令和读取路由；工具适配与核心规范分开。
-- 兼容双入口的镜像/冲突策略见工具适配参考；按既有作用域保留人工内容，涉及业务、安全、权限或生产含义的冲突才请求确认。
-- 不猜测版本、命令、负责人、业务边界或生产流程。非阻塞缺口写为“待确认”。
-- 保留现有人工内容和工作区改动；只修改命令对应范围。
-- 仅当无法推断的选择会改变业务行为、权限、安全、生产操作或已批准决策时，提出一个必要问题；其他情况直接完成。
-- 结构评分必须引用可定位证据；先呈现事实，再给出判断和改进建议。单文件过大既是文件级问题，也是职责边界和模块划分的证据。
-- 只报告实际执行的检查，并列出未验证项及原因。
-- 技术栈配置与真实命令从仓库发现；基线的验证方式是检查意图，不是已配置工具。文件规模等启发式默认值只作候选信号，项目采纳后才成为门禁；不统一覆盖率、框架、数据库或部署架构。
+仅在用户需要开发协作辅助时读 [开发流程](references/development-workflow.md)：读代码与调用方、明确 AC/拟改路径、实施、真实检查/修正、同步受影响文档与交付。短任务沿用现有需求/Issue 或对话，不强制账本。恢复先核实实际工作区与已完成检查。咨询/评审按只读意图，实现/修复推进到已授权结果；提交/发布沿用实际授权。
 
 ## 完成标准
 
-- 文档数量与项目规模相称，没有空壳或未替换的模板文本。
-- `init`/基线采用时六类均有适用性结论；关键规则有 ID、等级、范围、要求、理由、验证、失败处理和例外条件；项目记录采用版本，规范与当前项目产物分开。具体任务只按实际影响读取并验证相关类别。
-- 适用规则能追踪到质量门禁与完成证据；未验证的必须门禁保持未完成或关联有效例外，任务交接包含进度、失败恢复和下一步。
-- 项目特定陈述都有证据、用户确认或“待确认”标记。
-- 实际工具入口能路由到适用规范；采用双入口镜像时用 `cmp -s AGENTS.md CLAUDE.md` 验证一致；未真实加载的工具明确标为未验证。
-- `sync`/`audit` 的每项候选影响都有结论，且报告真实覆盖范围。
-- `workflow` 在任务授权范围内达到实际验收，或清楚说明未完成/未验证/待决范围；评审与咨询的完成是有证据的结论，不能自动进入实施。交接能从事实、进度与下一步恢复。
-- `check` 的每个评分维度都有证据或“待确认”说明，权重合计 100%，并列出单文件与 dead code 结果及至少一个最高优先级改进动作（若无问题则说明已验证的依据）。
+- 真正生成/更新少量适用文件；入口六项内容完整，目录覆盖受维护文件归属，条件读取指向实际文件。
+- 项目事实有配置/代码/有效决策依据；示例清楚标注，计划与现状、实施与验证分开，不把拟命令当已通过。
+- 规则直接指导动作、有短例与验证方式；不重复配置、不默认建立元数据/指标/账本系统。
+- `sync` / `audit` 每项影响有结论与覆盖范围，需求/ADR 历史和冲突可见；兼容镜像仅按约定维护并核对。
+- `check` 评分有证据/待确认、权重合计 100%，报告单文件与 dead code 结果；只报告实际运行检查。
+- 保留无关人工修改与既有命令语义；具体实现达到实际验收或说明未完成/未验证/待决范围。
