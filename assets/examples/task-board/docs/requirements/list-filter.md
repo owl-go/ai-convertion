@@ -22,7 +22,7 @@
 
 F1/F2/F3 → app/http.py、service.py、storage.py → test_active_default_and_opt_in_complete / test_invalid_filter。
 F4 → 原完成幂等测试加列表查询；F2/F4 基线真实页面已验证，F5 的条件保留/失败重试在扩展条件版本验证；读屏/对比度未验证。
-基线自动检查：unittest 10 项、两个 JS 语法检查、build；实际环境及执行结果见本轮验证记录。构建不是 UI 验证。
+基线自动检查：unittest 11 项、两个 JS 语法检查、build；实际环境及执行结果见本轮验证记录。构建不是 UI 验证。
 
 ## 修订依据
 

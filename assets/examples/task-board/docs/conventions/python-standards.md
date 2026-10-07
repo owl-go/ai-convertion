@@ -9,7 +9,7 @@ app/、tests/、scripts/；pyproject.toml 声明 Python >=3.11，CI 配置 3.11�
 - 模块/函数 snake_case，公开服务为 TaskService；HTTP、业务、SQL 归属见目录规范。
 - http.py 解析协议，service.py 校验标题和业务输入，storage.py 绑定 SQL 值；内部类型不能将非法值转成合法结果。
 - ValueError/LookupError 在 http.py 映射 400/404 并保留原因。未知异常由运行服务器暴露失败，不返回假成功；本例尚无应用级日志/统一 500 文案，新增相关行为先明确需求。
-- server.py 持有并关闭连接；storage.py 的 with connection 负责写操作提交/回滚；测试连接 addCleanup 关闭。当前服务串行，无后台并发任务。
+- server.py 用 contextlib.closing 持有并关闭连接（sqlite3 的 with 本身仅管理事务）；storage.py 的 with connection 负责写操作提交/回滚；测试连接 addCleanup 关闭。当前服务串行，无后台并发任务。
 - 新依赖修改真实清单并说明用途；没有锁文件或格式工具，不能编造格式命令或锁定版本。
 
 ## 正确例与错误例

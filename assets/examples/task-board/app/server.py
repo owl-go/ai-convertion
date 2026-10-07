@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from wsgiref.simple_server import make_server
 
 from app.http import Application
@@ -7,7 +8,7 @@ from app.storage import SQLiteRepository
 
 
 def main():
-    with sqlite3.connect("tasks.sqlite3") as connection:
+    with closing(sqlite3.connect("tasks.sqlite3")) as connection:
         repository = SQLiteRepository(connection)
         repository.migrate()
         app = Application(TaskService(repository))

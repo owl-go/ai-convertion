@@ -2,6 +2,7 @@ import io
 import json
 import sqlite3
 import unittest
+from unittest.mock import patch
 from app.http import Application
 from app.service import TaskService
 from app.storage import SQLiteRepository
@@ -85,3 +86,13 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(status, ["200 OK"])
         self.assertIn(b"<!doctype html>", body[0])
         self.assertEqual(self.request("GET", "/unknown")[0], "404 Not Found")
+
+    def test_server_closes_connection_on_failure(self):
+        from app.server import main
+
+        with patch("app.server.sqlite3.connect", return_value=self.connection), patch("app.server.make_server") as factory:
+            factory.return_value.__enter__.return_value.serve_forever.side_effect = RuntimeError("stop server")
+            with self.assertRaisesRegex(RuntimeError, "stop server"):
+                main()
+        with self.assertRaises(sqlite3.ProgrammingError):
+            self.connection.execute("SELECT 1")

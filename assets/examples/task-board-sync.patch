@@ -67,7 +67,7 @@ index f290603..b43756d 100644
  # 新增列表筛选方案
  
 -状态：已实现；基线自动检查与二选一页面验收已通过，其他 UI 项按实际范围记录。对应 [需求与 AC](../requirements/list-filter.md)。
-+状态：已实现；12 项自动测试与三条件基础 UI 验收已通过，未验证环境单列。对应 [需求与 AC](../requirements/list-filter.md)。
++状态：已实现；13 项自动测试与三条件基础 UI 验收已通过，未验证环境单列。对应 [需求与 AC](../requirements/list-filter.md)。
  
  1. **涉及模块**：既有 HTTP、service、storage、前端请求与页面、tests。跨接口和多模块，故保存独立短方案；没有新服务或固定层次要求。
 -2. **各处改动**：http.py 解析 include_done；service.py 接收布尔条件；storage.py 在默认查询加 done=0；api.mjs 序列化 0/1；index.html 增加关联标签的复选框；page.mjs 读取条件并刷新；tests/test_tasks.py 增加默认/全部/非法输入验收。沿目录规范现有位置，无新目录。
@@ -75,14 +75,14 @@ index f290603..b43756d 100644
 -4. **接口入出参**：GET /api/tasks?include_done=0|1，省略为 0；200 [{id,title,done}]，非法/空/重复 400 {error}；创建和完成接口不变。
 -5. **失败处理**：非法参数在查询前拒绝；查询未知异常不假成功；页面显示错误与重试，保留勾选状态；写入失败按原事务回滚。无外部重试任务。
 -6. **兼容影响**：原默认全部改为未完成，同仓客户端同时改；未知外部客户端待确认。schema、迁移和现有任务数据不变，迁移不适用。
--7. **验证**：F1/F2/F3 映射两项新增 unittest；完成/创建/约束继续回归。JS 语法与 build 只证明相应静态范围；F2/F4/F5 页面、键盘/视口按 UI 规范独立记录。
+-7. **验证**：F1/F2/F3 映射两项新增 unittest；完成/创建/约束与服务异常退出连接关闭继续回归。JS 语法与 build 只证明相应静态范围；F2/F4/F5 页面、键盘/视口按 UI 规范独立记录。
 -8. **恢复**：停止本地服务，回退筛选这批应用/测试/需求/方案改动后重启；保留 tasks.sqlite3，不把应用回退称数据恢复。此前全列表代码可从示例历史取得；生产部署/数据恢复不在本例。
 +2. **各处改动**：http.py 解析 status 或兼容 include_done；service.py 校验 active/all/done 白名单；storage.py 在参数绑定 done 条件，all 不过滤；api.mjs 序列化 status；index.html 增加关联标签的三选项 select；page.mjs 读取条件并刷新；tests/test_tasks.py 增加默认/全部/非法输入验收。沿目录规范现有位置，无新目录。
 +3. **数据流**：select → page → api → GET query → http 校验 → service → storage → 按 id 排序的 JSON → DOM。完成后按当前条件重新加载，筛选不写入数据库。
 +4. **接口入出参**：GET /api/tasks?status=active|all|done，省略为 active；旧 include_done=0|1 保持有效，两种参数混用拒绝；200 [{id,title,done}]，非法/空/重复 400 {error}；创建和完成接口不变。
 +5. **失败处理**：非法参数在查询前拒绝；查询未知异常不假成功；页面显示错误与重试，保留所选状态；写入失败按原事务回滚。无外部重试任务。
 +6. **兼容影响**：初次新增筛选时全部改为未完成；本次默认未完成不变，保留 include_done 老契约。同仓页面使用 status，未知外部客户端/环境仍未验证。schema、迁移和现有任务数据不变，迁移不适用。
-+7. **验证**：新增已完成/非法 status/混用拒绝及旧参数兼容；12 项 unittest 回归；完成/创建/约束继续回归。JS 语法与 build 只证明相应静态范围；F2/F4/F5 页面、键盘/视口按 UI 规范独立记录。
++7. **验证**：新增已完成/非法 status/混用拒绝及旧参数兼容；13 项 unittest 回归；完成/创建/约束与服务异常退出连接关闭继续回归。JS 语法与 build 只证明相应静态范围；F2/F4/F5 页面、键盘/视口按 UI 规范独立记录。
 +8. **恢复**：停止本地服务，回退筛选这批应用/测试/需求/方案改动后重启；保留 tasks.sqlite3，不把应用回退称数据恢复。本次可逆向应用演练补丁恢复二选一筛选；生产部署/数据恢复不在本例。
  
  通用目录、语言、前端和写法约定未变；具体功能规则保存在需求/方案，未创建账本或新迁移。
@@ -126,10 +126,10 @@ index c42d500..b8347b3 100644
  
 -F1/F2/F3 → app/http.py、service.py、storage.py → test_active_default_and_opt_in_complete / test_invalid_filter。
 -F4 → 原完成幂等测试加列表查询；F2/F4 基线真实页面已验证，F5 的条件保留/失败重试在扩展条件版本验证；读屏/对比度未验证。
--基线自动检查：unittest 10 项、两个 JS 语法检查、build；实际环境及执行结果见本轮验证记录。构建不是 UI 验证。
+-基线自动检查：unittest 11 项、两个 JS 语法检查、build；实际环境及执行结果见本轮验证记录。构建不是 UI 验证。
 +F1/F2/F3 → app/http.py、service.py、storage.py → test_active_default_and_opt_in_complete / test_invalid_filter；F6/F7/已完成条件 → test_status_filter_and_legacy_compatibility / test_invalid_status_leaves_data_unchanged。
 +F4 → 原完成幂等测试加列表查询；F2/F4/F5 三条件页面、完成刷新、条件/输入保留和重试已在浏览器验证；读屏/对比度未验证。
-+基线自动检查：unittest 12 项、两个 JS 语法检查、build；实际环境及执行结果见包内演练记录。构建不是 UI 验证。
++基线自动检查：unittest 13 项、两个 JS 语法检查、build；实际环境及执行结果见包内演练记录。构建不是 UI 验证。
  
  ## 修订依据
  

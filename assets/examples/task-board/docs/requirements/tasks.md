@@ -27,7 +27,7 @@
 | T3/T4-v2/T5/T7/T8 | 同上 | 完成/缺失测试、test_active_default_and_opt_in_complete、test_invalid_filter；本轮 10 项通过 |
 | T6 | web/page.mjs、index.html、tokens.css | 基线创建/完成已复验；扩展条件的失败恢复、390/1280视口与键盘提交已做基础检查，读屏/对比度未验证 |
 
-实际环境与结果见本轮验证记录；unittest 10 项、JS 语法、build 通过。CI/部署/覆盖率未运行。相关实现方案见 [tasks](../designs/tasks.md)。
+实际环境与结果见本轮验证记录；unittest 11 项、JS 语法、build 通过。CI/部署/覆盖率未运行。相关实现方案见 [tasks](../designs/tasks.md)。
 
 ## 修订（2026-10-07 教学模拟新要求）
 

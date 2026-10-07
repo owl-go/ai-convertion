@@ -30,10 +30,12 @@ dist/ / tasks.sqlite3      # 本机生成物，忽略
 
 都在项目根目录执行；依据 server.py、build.py 和 CI。
 
+先用 `python3 --version` 核实 >=3.11；系统默认解释器可能低于约束，需要选择满足声明的解释器。本轮补充复核使用 Python 3.14，不能把系统默认命令名当成环境已就绪的证据。
+
 | 用途 | 命令 | 验证范围 |
 |---|---|---|
 | 启动 | `python3 -m app.server` | 本机服务；读取/写入 tasks.sqlite3 |
-| 行为测试 | `python3 -m unittest discover -s tests -v` | 内存连接隔离；新增筛选基线 10 项 |
+| 行为测试 | `python3 -m unittest discover -s tests -v` | 内存连接隔离；新增筛选基线 11 项 |
 | JS 语法 | `node --check web/api.mjs`、`node --check web/page.mjs` | 语法，不证明 UI |
 | 编译/静态复制 | `python3 scripts/build.py` | 无前端打包或生产部署 |
 

@@ -17,8 +17,8 @@
 | 检查 | 结果与范围 |
 |---|---|
 | quick_validate.py | 通过；临时虚拟环境运行。最初解释器缺 PyYAML，安装到临时环境后重试，未改项目依赖 |
-| 基线 `python3 -m unittest discover -s tests -v` | 10 项通过；首次从包根误运行导致 app 导入失败，改为教学项目根目录后通过 |
-| 扩展条件同命令 | 12 项通过；默认/全部/仅已完成、旧参数兼容、非法/重复/混用与数据不变 |
+| 基线 `python3 -m unittest discover -s tests -v` | 11 项通过；首次从包根误运行导致 app 导入失败，改为教学项目根目录后通过 |
+| 扩展条件同命令 | 13 项通过；默认/全部/仅已完成、旧参数兼容、非法/重复/混用与数据不变 |
 | JS `node --check web/api.mjs` / `web/page.mjs` | 两版均通过；仅证明语法 |
 | `python3 scripts/build.py` | 两版通过；Python 编译与静态复制，不是生产构建/发布 |
 | 三个既有辅助脚本 | evidence、health、quality 的 --help 与 JSON 输出成功；sync 采集准确列出 9 个变化路径 |
@@ -51,15 +51,23 @@ GitHub CI/Python 3.11、读屏、量化对比度、真实多进程并发、未�
 
 同步前/后全量哈希、受控动作及旧文件备份保存在本机临时演练记录中；本报告保留关键结果与脚本哈希。每个同步文件与源码逐字一致，清单外文件逐一核对；源里没有的个人 dead code 脚本继续保留。
 
+## 最终版本补充复核
+
+并发更新期间远端推进到 1743053，个人安装也已更新。写入前检测到变化，本聊天未覆盖旧目标；以该提交继续，并保留较早的并行稿在独立本地提交。补充修正示例 server：sqlite3 的 with 管理事务，不会关闭连接；改为 contextlib.closing，并加入服务异常退出后连接不可使用的行为回归。
+
+最终副本：基线 11 项、三条件扩展 13 项测试通过，两个 JS 语法及 build 通过，补丁 apply --check/apply 成功。执行 Python 3.14.7 / SQLite 3.53.4 / Node 26.8.2；系统默认 Python 3.9.6 不满足项目约束，未用于这些测试。既有 10/12 项是首次演练，新增资源回归后为 11/13。
+
+补充复核验证包内引用、UTF-8、来源内容排查、32 个稳定 ID 与六份规则正文一致，以及仓库/安装既有脚本的有效 JSON 输出。仅复用原 UI 检查记录；补充连接关闭未改变 UI。其他客户端、CI/生产、读屏及对比度仍未验证，静态检查不冒充独立模型行为评估。
+
 ## sync 通用文件哈希证据
 
-下列每项同步前后哈希相同；具体需求/方案与测试在补丁中有差异。
+最终副本的入口与 9 份规范，在三条件 sync 前后逐项一致；具体需求/方案与测试有差异。
 
 | 文件 | 同步前后相同的 SHA-256 |
 |---|---|
-| AGENTS.md | `907f29bb49f9233da87d1b6e1ed71bb79081b950580256f829b19ee0aadb4023` |
+| AGENTS.md | `2ade108edb2e53e81bd37f8444796ec94642ad997847b9f3f7291093352f8f15` |
 | docs/conventions/directory-structure.md | `b5fdd2b462a05d6cb7afb2fcebcc6e5895e347b8dc1bff035bc07cab48c619cf` |
-| docs/conventions/python-standards.md | `ba4fd30d608d1f6159cefb2c6d8a911286692b261dcc2b67f315dc58e4e0dc2d` |
+| docs/conventions/python-standards.md | `bb19b843c41f60fa6da9e177f43b46265ccb9795506f35909d4bd1a7d7de096f` |
 | docs/conventions/frontend-standards.md | `3bc01353afe5ff094cca6548de0c6cc45306ddb4c8dd3b2be2991b168a0c6115` |
 | docs/conventions/javascript-standards.md | `99020a9fbfc23925cadf70da803c543c2c38d30473bd92a8ec31eda818f8961f` |
 | docs/conventions/requirement-standards.md | `0b27d33c5e5de83ece599f362d9939b8962a52de1a58587b991bbcf2a564b56f` |
@@ -67,3 +75,8 @@ GitHub CI/Python 3.11、读屏、量化对比度、真实多进程并发、未�
 | docs/conventions/technical-design-standards.md | `dbaf64c7e5ac3d6e355316794a332108dc8322cc7aa843c0ac8a51349c8990cf` |
 | docs/conventions/ui-standards.md | `f0504d21b140bf0691e5578c3b1814654ecce963f7a04db757c016b9389c2bc3` |
 | docs/conventions/database-standards.md | `3c4eca985a489f3d8d6c69d8c82ed42afc24597df120c4002d6f12ae39e54126` |
+
+
+## 最终安装补充审计
+
+并发交付后重新记录目标的 92 个文件；仅同步本聊天追加的 13 个受控文件，79 个清单外文件 SHA-256 保持不变。三个用户独立脚本继续与本聊天开始的哈希逐字一致。每个受控文件与最终源码相同；写入前重新核对全量目标，无并发变化才执行，旧内容有临时备份。
