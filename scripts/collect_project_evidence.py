@@ -70,9 +70,33 @@ DOC_NAMES = {
 
 IMPACT_RULES = (
     (
+        "requirements-and-acceptance",
+        lambda p: (
+            any(part in {"requirements", "specs", "acceptance"} for part in Path(p.lower()).parts[:-1])
+            or Path(p).stem.lower() in {"requirement", "requirements", "acceptance"}
+        ),
+        ["approved requirements/acceptance revisions", "affected design/contracts/data/tests/UI", "implementation and verification trace"],
+    ),
+    (
+        "architecture-and-decisions",
+        lambda p: (
+            any(part in {"adr", "architecture", "designs"} for part in Path(p.lower()).parts[:-1])
+            or Path(p).stem.lower() in {"architecture", "technical-design", "project-map"}
+        ),
+        ["current architecture versus planned design", "module boundaries/contracts", "ADR supersession/operations/tool routes"],
+    ),
+    (
+        "ui-and-interaction",
+        lambda p: (
+            Path(p).suffix.lower() in {".tsx", ".jsx", ".vue", ".svelte", ".css", ".scss"}
+            or any(part in {"ui", "components", "pages", "design-system"} for part in Path(p.lower()).parts[:-1])
+        ),
+        ["UI specification/design system", "state/viewport/keyboard/interaction acceptance", "visual and behavior verification evidence"],
+    ),
+    (
         "dependencies-and-toolchain",
         lambda p: Path(p).name in (MANIFEST_NAMES | LOCKFILE_NAMES),
-        ["AGENTS.md/CLAUDE.md", "quality gates", "architecture/operations when runtime changes"],
+        ["configured project instruction entrypoints", "quality gates", "architecture/operations when runtime changes"],
     ),
     (
         "api-and-contracts",
@@ -104,7 +128,7 @@ IMPACT_RULES = (
             p.startswith((".github/workflows/", ".gitlab/", "deploy/", "infra/", "k8s/", "terraform/"))
             or any(token in p.lower() for token in ("dockerfile", "compose.y", "helm", "deployment"))
         ),
-        ["quality gates", "deployment/rollback runbooks", "AGENTS.md/CLAUDE.md target environments"],
+        ["quality gates", "deployment/rollback runbooks", "configured instruction entrypoints/target environments"],
     ),
     (
         "tests-and-quality",
@@ -112,7 +136,7 @@ IMPACT_RULES = (
             p.startswith(("test/", "tests/", ".github/workflows/", ".gitlab/"))
             or any(token in p.lower() for token in ("/test/", "/tests/", ".spec.", ".test.", "lint", "eslint"))
         ),
-        ["quality gates", "testing standard", "AGENTS.md/CLAUDE.md commands"],
+        ["quality gates", "testing standard", "configured instruction entrypoints/commands"],
     ),
     (
         "domain-language",
@@ -280,6 +304,10 @@ def collect(root: Path, since: str | None) -> dict[str, object]:
     return {
         "repository": str(root),
         "comparison_base": since,
+        "comparison_semantics": (
+            "merge-base(ref, HEAD)..HEAD plus staged, unstaged, and untracked paths"
+            if since else "staged, unstaged, and untracked paths only"
+        ),
         "inventory": {
             "manifests_and_build_files": manifests,
             "ai_and_project_documents": docs,
@@ -304,6 +332,7 @@ def render_markdown(report: dict[str, object]) -> str:
         "",
         f"- Repository: `{report['repository']}`",
         f"- Comparison base: `{report['comparison_base'] or 'working tree only'}`",
+        f"- Comparison semantics: {report['comparison_semantics']}",
         f"- Disclaimer: {report['disclaimer']}",
         "",
     ]
